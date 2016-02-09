@@ -1,0 +1,16 @@
+<LoginScreen>:
+    GridLayout:
+        rows: 2
+        cols: 2
+        padding: 10
+        spacing: 10
+        Label:
+            text: 'Welcome to PyORAM'
+        Label:
+            text: 'Enter Password:'
+        TextInput:
+            id: password
+            password: True
+        Button:
+            text: 'Start PyORAM'
+            on_press: root.verify(password.text)

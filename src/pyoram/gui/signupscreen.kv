@@ -1,0 +1,21 @@
+<SignupScreen>:
+    GridLayout:
+        rows: 3
+        cols: 2
+        padding: 10
+        spacing: 10
+        Label:
+            text: 'Welcome to PyORAM'
+        Label:
+            text: 'Password:'
+        TextInput:
+            id: password
+            password: True
+        Label:
+            text: 'Retype Password:'
+        TextInput:
+            id: re_password
+            password: True
+        Button:
+            text: 'Create access'
+            on_press: root.text(password.text, re_password.text)
