@@ -8,3 +8,11 @@
 ###Python###
 
 __pycache__/
+
+##pyoram##
+
+*.map
+
+###Visio###
+
+*.~vsdx
