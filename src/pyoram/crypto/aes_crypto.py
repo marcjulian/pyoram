@@ -1,21 +1,28 @@
-"""
-Cipher: AES with CBC mode
-HMAC SHA-512
-"""
 import base64
+import binascii
 import os
+import six
+import struct
+import time
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.keywrap import aes_key_wrap, aes_key_unwrap, InvalidUnwrap
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.keywrap import aes_key_wrap, aes_key_unwrap, InvalidUnwrap
+from cryptography.hazmat.primitives.hmac import HMAC
 
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
 
 
-class AESCrypto(object):
+class InvalidToken(Exception):
+    # TODO: catch InvalidToken for the user to inform about the error, maybe add a text for the different invalidtokens
+    pass
 
+
+class AESCrypto(object):
     def __init__(self, key_file, pw, backend=None):
         if backend is None:
             backend = default_backend()
@@ -82,11 +89,73 @@ class AESCrypto(object):
         except InvalidUnwrap:
             raise WrongPassword("Password is incorrect.")
 
-
     def encrypt(self, data):
+        current_time = int(time.time())
         iv = os.urandom(16)
-        # TODO: save IV in the position map
-        return 0
+        return self.encrypt_with_hmac(data, current_time, iv)
 
-    def decrypt(self, data):
-        return 0
+    def encrypt_with_hmac(self, data, current_time, iv):
+        if not isinstance(data, bytes):
+            raise TypeError("data must be bytes.")
+
+        # PKCS7 padding
+        padder = padding.PKCS7(algorithms.AES.block_size).padder()
+        padded_data = padder.update(data) + padder.finalize()
+        # AES with CBC mode
+        encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
+        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+
+        # TODO: find out about struct.pack
+        # TODO: write down that the iv is stored within the returned token
+        main_parts = (
+            b"\x80" + struct.pack(">Q", current_time) + iv + ciphertext
+        )
+
+        h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
+        h.update(main_parts)
+        hmac = h.finalize()
+        return base64.urlsafe_b64encode(main_parts + hmac)
+
+    def decrypt(self, token):
+        if not isinstance(token, bytes):
+            raise TypeError("token must be bytes")
+
+        current_time = int(time.time())
+
+        try:
+            data = base64.urlsafe_b64decode(token)
+        except (TypeError, binascii.Error):
+            raise InvalidToken
+
+        if not data or six.indexbytes(data, 0) != 0x80:
+            raise InvalidToken
+
+        # TODO: is timestamp necessary?
+        try:
+            timestamp, = struct.unpack(">Q", data[1:9])
+        except struct.error:
+            raise InvalidToken
+
+        h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
+        h.update(data[:-32])
+        try:
+            h.verify(data[-32:])
+        except InvalidSignature:
+            raise InvalidToken
+
+        iv = data[9:25]
+        ciphertext = data[25:-32]
+        decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
+        plaintext_padded = decryptor.update(ciphertext)
+        try:
+            plaintext_padded += decryptor.finalize()
+        except ValueError:
+            raise InvalidToken
+
+        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+        plaintext = unpadder.update(plaintext_padded)
+        try:
+            plaintext += unpadder.finalize()
+        except ValueError:
+            raise InvalidToken
+        return plaintext

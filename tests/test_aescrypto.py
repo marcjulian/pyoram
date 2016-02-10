@@ -1,17 +1,67 @@
 from unittest import TestCase
-from pyoram.crypto.aes_crypto import AESCrypto
+
+from pyoram.exceptions import WrongPassword
+from pyoram.crypto.aes_crypto import AESCrypto, InvalidToken
 
 
 class TestAESCrypto(TestCase):
+    def test_encrypt_decrypt(self):
+        text = b"A very very secret message."
+        password = 'Blubb1234'
 
-    def test_verify_pw(self):
-        pw = 'Blubb1234'
-        hashed_pw = AESCrypto.hash_pw(pw)
-        print(hashed_pw)
-        assert AESCrypto.verify_pw(pw, hashed_pw)
+        key_file = AESCrypto.create_keys(password)
 
-    def test_false_verify_pw(self):
-        pw = 'Blubb1234'
-        hashed_pw = AESCrypto.hash_pw(pw)
-        pw2 = '1234Blubb'
-        assert not AESCrypto.verify_pw(pw2, hashed_pw)
+        aes_crypto = AESCrypto(key_file, password)
+        ciphertext = aes_crypto.encrypt(text)
+        assert text != ciphertext
+
+        plaintext = aes_crypto.decrypt(ciphertext)
+        assert text == plaintext
+
+    def test_encryption_input_error(self):
+        text = "Spr scrt mssg, dnt tll nyn."
+        password = '1234Secure'
+
+        key_file = AESCrypto.create_keys(password)
+        aes_crypto = AESCrypto(key_file, password)
+
+        try:
+            aes_crypto.encrypt(text)
+            assert False
+        except TypeError:
+            assert True
+
+    def test_decryption_error(self):
+        text = b"Spr scrt mssg, dnt tll nyn."
+        password = '1234Secure'
+
+        key_file = AESCrypto.create_keys(password)
+        aes_crypto = AESCrypto(key_file, password)
+
+        ciphertext = aes_crypto.encrypt(text)
+        try:
+            aes_crypto.decrypt(ciphertext[10:50])
+            assert False
+        except InvalidToken:
+            assert True
+
+    def test_password(self):
+        password = 'SIIT2016'
+
+        key_file = AESCrypto.create_keys(password)
+        try:
+            AESCrypto(key_file, password)
+            assert True
+        except WrongPassword:
+            assert False
+
+    def test_wrong_password(self):
+        password = 'SecretPassword'
+
+        key_file = AESCrypto.create_keys(password)
+        wrong_password = "Forgot the password"
+        try:
+            AESCrypto(key_file, wrong_password)
+            assert False
+        except WrongPassword:
+            assert True
