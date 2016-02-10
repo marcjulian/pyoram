@@ -26,3 +26,8 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 - crypthography
 - kivy
 - dropbox
+
+## Under construction
+
+PyORAM is currently under construction and further features will be added shortly.
+For more information visit the kanban board at [Taiga.io](https://tree.taiga.io/project/marcjulian-pyoram/).
