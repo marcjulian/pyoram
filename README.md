@@ -4,7 +4,13 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 ## Features
 
+### Architecture
+
+![overview](/docs/Architecture.png?raw=true "overview")
+
 ### Confidentiality
+
+![key.map](/docs/crypto/keymap.png?raw=true "key.map")
 
 ### Authentication
 
