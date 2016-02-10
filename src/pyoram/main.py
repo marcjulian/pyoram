@@ -27,7 +27,7 @@ class PyORAMApp(App):
         return sm
 
     def has_signed_up(self):
-        return data.file_exists(utils.KEY_MAP_FILE_NAME) & KeyFile.verify_content()
+        return data.file_exists(utils.KEY_MAP_FILE_NAME) and KeyFile.verify_content()
 
 
 if __name__ == '__main__':
