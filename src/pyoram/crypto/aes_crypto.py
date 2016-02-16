@@ -2,8 +2,6 @@ import base64
 import binascii
 import os
 import six
-import struct
-import time
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -90,11 +88,10 @@ class AESCrypto(object):
             raise WrongPassword("Password is incorrect.")
 
     def encrypt(self, data):
-        current_time = int(time.time())
         iv = os.urandom(16)
-        return self.encrypt_with_hmac(data, current_time, iv)
+        return self.encrypt_with_hmac(data, iv)
 
-    def encrypt_with_hmac(self, data, current_time, iv):
+    def encrypt_with_hmac(self, data, iv):
         if not isinstance(data, bytes):
             raise TypeError("data must be bytes.")
 
@@ -105,22 +102,20 @@ class AESCrypto(object):
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-        # TODO: find out about struct.pack
         # TODO: write down that the iv is stored within the returned token
         main_parts = (
-            b"\x80" + struct.pack(">Q", current_time) + iv + ciphertext
+            b"\x80" + iv + ciphertext
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
         h.update(main_parts)
         hmac = h.finalize()
+        # TODO: write down that the hmac is stored within the returned token
         return base64.urlsafe_b64encode(main_parts + hmac)
 
     def decrypt(self, token):
         if not isinstance(token, bytes):
             raise TypeError("token must be bytes")
-
-        current_time = int(time.time())
 
         try:
             data = base64.urlsafe_b64decode(token)
@@ -130,12 +125,6 @@ class AESCrypto(object):
         if not data or six.indexbytes(data, 0) != 0x80:
             raise InvalidToken
 
-        # TODO: is timestamp necessary?
-        try:
-            timestamp, = struct.unpack(">Q", data[1:9])
-        except struct.error:
-            raise InvalidToken
-
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
         h.update(data[:-32])
         try:
@@ -143,8 +132,8 @@ class AESCrypto(object):
         except InvalidSignature:
             raise InvalidToken
 
-        iv = data[9:25]
-        ciphertext = data[25:-32]
+        iv = data[1:17]
+        ciphertext = data[17:-32]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:
