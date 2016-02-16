@@ -6,11 +6,11 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 ### Architecture
 
-![overview](/docs/Architecture.png?raw=true "overview")
+<img src="/docs/Architecture.png?raw=true" width="500">
 
 ### Keys
 
-![key.map](/docs/crypto/keymap.png?raw=true "key.map")
+<img src="/docs/crypto/keymap.png?raw=true" width="700">
 
 ### Confidentiality
 
