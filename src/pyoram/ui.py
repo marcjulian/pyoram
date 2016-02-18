@@ -1,17 +1,23 @@
+import os
+
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
+from kivy.uix.treeview import TreeView, TreeViewLabel
+from kivy.uix.floatlayout import FloatLayout
+from kivy.properties import ObjectProperty
 
 from pyoram.crypto.aes_crypto import AESCrypto
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
+from pyoram.core.stash import Stash
 
 
 class SignupScreen(Screen):
     Builder.load_file('gui/signupscreen.kv')
 
-    def text(self, pw, repw):
+    def signup(self, pw, repw):
         if pw == repw and (pw and repw):
             key_file = AESCrypto.create_keys(pw)
             key_file.save_to_file()
@@ -41,7 +47,45 @@ class LoginScreen(Screen):
             popup.open()
 
 
+class LoadDialog(FloatLayout):
+    load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
+
+
 class MainScreen(Screen):
+    file_view = ObjectProperty(None)
     Builder.load_file('gui/mainscreen.kv')
     """ TODO: file chooser button and show data tree, create stash,
      oram function, splitting file, encrypting and decrypting file"""
+
+    def on_pre_enter(self, *args):
+        self.stash = Stash()
+        # TODO: create file and position map
+        # TODO: read file map and display uploaded files in the listview
+        file_label = self.file_view.add_node(TreeViewLabel(text='Files', is_open=True))
+        self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
+
+    def dismiss_popup(self):
+        self._popup.dismiss()
+
+    def select_file(self):
+        content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+        self._popup = Popup(title="Load file", content=content, size_hint=(0.9, 0.9))
+        self._popup.open()
+
+    def load(self, path, filename):
+        # TODO: save filename in the file.map
+        # TODO: create chunks of the file and encrypt it, store it in the stash
+        with open(os.path.join(path, filename[0])) as stream:
+            self.file_input = stream.read()
+
+        self.dismiss_popup()
+
+    def select_location(self):
+        print(2)
+
+    def delete_selected_file(self):
+        print(3)
+
+
+print(help(TreeView))

@@ -1,6 +1,7 @@
 import dropbox
 
-dbx = dropbox.Dropbox('76cGza-MDswAAAAAAACT7tb2RBKHUidDzW9THrFAyEgxM7rLXa8s2UYxnSbMmKC1')
+# TODO: load dropbox token from dropbox.map (in data folder)
+dbx = dropbox.Dropbox('')
 
 dbx.files_upload("First upload", '/tests.txt')
 

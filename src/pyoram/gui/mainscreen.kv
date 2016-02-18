@@ -1,3 +1,39 @@
 <MainScreen>:
-    Label:
-        text: 'Hello World!'
+    file_view: file_view
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: 'Upload File'
+                on_release: root.select_file()
+            Button:
+                text: 'Download File'
+                on_release: root.select_location()
+            Button:
+                text: 'Delete File'
+                on_release: root.delete_selected_file()
+        BoxLayout:
+            TreeView:
+                hide_root: True
+                id: file_view
+
+<LoadDialog>:
+    BoxLayout:
+        size: root.size
+        pos: root.pos
+        orientation: "vertical"
+        FileChooserListView:
+            id: filechooser
+
+        BoxLayout:
+            size_hint_y: None
+            height: 30
+            Button:
+                text: "Cancel"
+                on_release: root.cancel()
+
+            Button:
+                text: "Load"
+                on_release: root.load(filechooser.path, filechooser.selection)

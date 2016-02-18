@@ -9,3 +9,11 @@ def open_data_file(filename, mode):
 
 def file_exists(filename):
     return os.path.isfile(os.path.join(base_dir, filename))
+
+
+def is_folder(folder_name):
+    return os.path.isdir(os.path.join(base_dir, folder_name))
+
+
+def create_folder(folder_name):
+    os.makedirs(os.path.join(base_dir, folder_name))
