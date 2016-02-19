@@ -102,23 +102,27 @@ class AESCrypto(object):
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-        # TODO: write down that the iv is stored within the returned token
+        # TODO: Store iv locally, not on the server (position.map)
+        # TODO: store dataID with the ciphertext (important for downloading to determine if its the actual data)
         main_parts = (
-            b"\x80" + iv + ciphertext
+            b"\x80" + ciphertext
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
         h.update(main_parts)
         hmac = h.finalize()
-        # TODO: write down that the hmac is stored within the returned token
-        return base64.urlsafe_b64encode(main_parts + hmac)
+        # TODO: Store hmac locally, not on the server (in the position.map) to optimize the speed of the
+        # transfer to the cloud
+        return self.to_base64(main_parts), self.to_base64(iv), self.to_base64(hmac)
 
-    def decrypt(self, token):
+    def decrypt(self, token, iv, hmac):
         if not isinstance(token, bytes):
             raise TypeError("token must be bytes")
 
         try:
-            data = base64.urlsafe_b64decode(token)
+            data = self.from_base64(token)
+            iv = self.from_base64(iv)
+            hmac = self.from_base64(hmac)
         except (TypeError, binascii.Error):
             raise InvalidToken
 
@@ -126,14 +130,13 @@ class AESCrypto(object):
             raise InvalidToken
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
-        h.update(data[:-32])
+        h.update(data)
         try:
-            h.verify(data[-32:])
+            h.verify(hmac)
         except InvalidSignature:
             raise InvalidToken
 
-        iv = data[1:17]
-        ciphertext = data[17:-32]
+        ciphertext = data[1:]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:

@@ -1,10 +1,11 @@
 import os
+import threading
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import Screen
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
-from kivy.uix.treeview import TreeView, TreeViewLabel
+from kivy.uix.treeview import TreeViewLabel
 from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
 
@@ -12,6 +13,7 @@ from pyoram.crypto.aes_crypto import AESCrypto
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
 from pyoram.core.stash import Stash
+from pyoram.core.oram import PathORAM
 
 
 class SignupScreen(Screen):
@@ -55,11 +57,19 @@ class LoadDialog(FloatLayout):
 class MainScreen(Screen):
     file_view = ObjectProperty(None)
     Builder.load_file('gui/mainscreen.kv')
+    stop = threading.Event()
     """ TODO: file chooser button and show data tree, create stash,
      oram function, splitting file, encrypting and decrypting file"""
 
+    def background_task(self):
+        self.oram = PathORAM()
+        self.oram.setup_cloud()
+        self.stop.set()
+
     def on_pre_enter(self, *args):
         self.stash = Stash()
+        # use thread for background task, use clock in a background task to access the ui
+        threading.Thread(target=self.background_task).start()
         # TODO: create file and position map
         # TODO: read file map and display uploaded files in the listview
         file_label = self.file_view.add_node(TreeViewLabel(text='Files', is_open=True))
@@ -76,6 +86,7 @@ class MainScreen(Screen):
     def load(self, path, filename):
         # TODO: save filename in the file.map
         # TODO: create chunks of the file and encrypt it, store it in the stash
+        # TODO: save file size (maybe add padding)
         with open(os.path.join(path, filename[0])) as stream:
             self.file_input = stream.read()
 
@@ -86,6 +97,3 @@ class MainScreen(Screen):
 
     def delete_selected_file(self):
         print(3)
-
-
-print(help(TreeView))

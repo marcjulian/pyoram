@@ -12,10 +12,10 @@ class TestAESCrypto(TestCase):
         key_file = AESCrypto.create_keys(password)
 
         aes_crypto = AESCrypto(key_file, password)
-        ciphertext = aes_crypto.encrypt(text)
+        ciphertext, iv, hmac = aes_crypto.encrypt(text)
         assert text != ciphertext
 
-        plaintext = aes_crypto.decrypt(ciphertext)
+        plaintext = aes_crypto.decrypt(ciphertext, iv, hmac)
         assert text == plaintext
 
     def test_encryption_input_error(self):
