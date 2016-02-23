@@ -39,4 +39,5 @@ class Cloud:
             logging.info('upload file %d' % block)
             self.dbx.files_upload(base64.urlsafe_b64encode(os.urandom(self.get_random_byte_len())).decode(),
                                   '/' + FILE_NAME % block)
+        # TODO: write init is done to one of the maps, so that init is not necessary again
         logging.info('end setup of the cloud')

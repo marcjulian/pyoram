@@ -20,5 +20,5 @@ class PathORAM:
         return cls.get_max_oram_block_size() * BLOCK_SIZE
 
     def setup_cloud(self):
-        # TODO: setup_cloud only for the first time (how to identify the first time
+        # TODO: setup_cloud only for the first time (how to identify the first time?)
         self.cloud.setup_cloud(self.get_max_oram_block_size())

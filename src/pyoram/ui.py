@@ -14,6 +14,10 @@ from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
 from pyoram.core.stash import Stash
 from pyoram.core.oram import PathORAM
+from pyoram.core.chunk_file import ChunkFile
+from pyoram import utils
+
+AES_CRYPTO = None
 
 
 class SignupScreen(Screen):
@@ -40,8 +44,8 @@ class LoginScreen(Screen):
     def verify(self, pw):
         key_file = KeyFile.load_from_file()
         try:
-            aes_crypto = AESCrypto(key_file, pw)
-            # TODO: save aes_crypto as global variable, so it can be used in the main screen
+            global AES_CRYPTO
+            AES_CRYPTO = AESCrypto(key_file, pw)
             self.manager.current = 'main'
         except WrongPassword as err:
             popup = Popup(title='Wrong password', content=Label(text=err.__str__()),
@@ -73,7 +77,8 @@ class MainScreen(Screen):
         # TODO: create file and position map
         # TODO: read file map and display uploaded files in the listview
         file_label = self.file_view.add_node(TreeViewLabel(text='Files', is_open=True))
-        self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
+        # TODO: remove this node, add the real files from the filemap
+        #self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
 
     def dismiss_popup(self):
         self._popup.dismiss()
@@ -87,9 +92,13 @@ class MainScreen(Screen):
         # TODO: save filename in the file.map
         # TODO: create chunks of the file and encrypt it, store it in the stash
         # TODO: save file size (maybe add padding)
-        with open(os.path.join(path, filename[0])) as stream:
-            self.file_input = stream.read()
 
+        with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
+            self.file_input = file.read()
+
+        # TODO: move it to a background thread
+        chunkfile = ChunkFile(self.file_input, AES_CRYPTO)
+        chunkfile.split()
         self.dismiss_popup()
 
     def select_location(self):

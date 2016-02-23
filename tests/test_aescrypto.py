@@ -5,6 +5,7 @@ from pyoram.crypto.aes_crypto import AESCrypto, InvalidToken
 
 
 class TestAESCrypto(TestCase):
+    # TODO: check if all test are run through without error
     def test_encrypt_decrypt(self):
         text = b"A very very secret message."
         password = 'Blubb1234'
