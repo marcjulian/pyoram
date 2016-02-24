@@ -8,7 +8,7 @@ BLOCK_SIZE = 1000
 
 
 # TODO: calculate the block size for splitting the file, because the encryption makes the length bigger
-# (also consider the dataID +  b"\x80"
+# (also consider the dataID +  b"\x80")
 
 
 class ChunkFile:

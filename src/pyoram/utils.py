@@ -1,5 +1,6 @@
 WRITE_MODE = 'w'
 READ_MODE = 'r'
+READ_WRITE_MODE = 'r+'
 READ_BINARY_MODE = 'rb'
 
 KEY_MAP_FILE_NAME = 'key.map'

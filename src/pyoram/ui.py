@@ -78,7 +78,7 @@ class MainScreen(Screen):
         # TODO: read file map and display uploaded files in the listview
         file_label = self.file_view.add_node(TreeViewLabel(text='Files', is_open=True))
         # TODO: remove this node, add the real files from the filemap
-        #self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
+        # self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
 
     def dismiss_popup(self):
         self._popup.dismiss()
