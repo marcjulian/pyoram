@@ -89,15 +89,11 @@ class MainScreen(Screen):
         self._popup.open()
 
     def load(self, path, filename):
-        # TODO: save filename in the file.map
-        # TODO: create chunks of the file and encrypt it, store it in the stash
-        # TODO: save file size (maybe add padding)
-
         with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
             self.file_input = file.read()
 
-        # TODO: move it to a background thread
-        chunkfile = ChunkFile(self.file_input, AES_CRYPTO)
+        # TODO: move it to a background thread, if necessary
+        chunkfile = ChunkFile(os.path.basename(filename[0]), self.file_input, AES_CRYPTO)
         chunkfile.split()
         self.dismiss_popup()
 

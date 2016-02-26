@@ -1,3 +1,5 @@
+import base64
+
 WRITE_MODE = 'w'
 READ_MODE = 'r'
 READ_WRITE_MODE = 'r+'
@@ -17,3 +19,11 @@ def str_to_byte(att):
 
 def byte_to_str(att):
     return att.decode()
+
+
+def to_base64(att):
+    return base64.urlsafe_b64encode(att)
+
+
+def from_base64(att):
+    return base64.urlsafe_b64decode(att)

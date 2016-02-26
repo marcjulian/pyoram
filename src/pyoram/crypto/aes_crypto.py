@@ -87,13 +87,16 @@ class AESCrypto(object):
         except InvalidUnwrap:
             raise WrongPassword("Password is incorrect.")
 
-    def encrypt(self, data):
+    def encrypt(self, data, data_id):
         iv = os.urandom(16)
-        return self.encrypt_with_hmac(data, iv)
+        return self.encrypt_with_hmac(data, data_id, iv)
 
-    def encrypt_with_hmac(self, data, iv):
+    def encrypt_with_hmac(self, data, data_id, iv):
         if not isinstance(data, bytes):
             raise TypeError("data must be bytes.")
+
+        if not isinstance(data_id, bytes):
+            raise TypeError("data_id must be bytes.")
 
         # PKCS7 padding
         padder = padding.PKCS7(algorithms.AES.block_size).padder()
@@ -102,17 +105,13 @@ class AESCrypto(object):
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-        # TODO: Store iv locally, not on the server (position.map)
-        # TODO: store dataID with the ciphertext (important for downloading to determine if its the actual data)
         main_parts = (
-            b"\x80" + ciphertext
+            b"\x80" + ciphertext + data_id
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
         h.update(main_parts)
         hmac = h.finalize()
-        # TODO: Store hmac locally, not on the server (in the position.map) to optimize the speed of the
-        # transfer to the cloud
         return self.to_base64(main_parts), self.to_base64(iv), self.to_base64(hmac)
 
     def decrypt(self, token, iv, hmac):
@@ -136,6 +135,7 @@ class AESCrypto(object):
         except InvalidSignature:
             raise InvalidToken
 
+        # TODO: retrieve data_ID
         ciphertext = data[1:]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
