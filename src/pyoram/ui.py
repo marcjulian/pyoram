@@ -2,22 +2,23 @@ import os
 import threading
 
 from kivy.lang import Builder
-from kivy.uix.screenmanager import Screen
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
-from kivy.uix.treeview import TreeViewLabel
-from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import ObjectProperty
+from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+from kivy.uix.treeview import TreeViewLabel
+from kivy.uix.popup import Popup
 
-from pyoram.crypto.aes_crypto import AESCrypto
-from pyoram.crypto.keyfile import KeyFile
-from pyoram.exceptions import WrongPassword
-from pyoram.core.stash import Stash
-from pyoram.core.oram import PathORAM
-from pyoram.core.chunk_file import ChunkFile
-from pyoram import utils
+from pyoram import utils, controller
+from pyoram.exceptions import WrongPassword, NoSelectedNode
 
 AES_CRYPTO = None
+
+
+def open_popup(title, err):
+    popup = Popup(title=title, content=Label(text=err.__str__()),
+                  size_hint=(None, None), size=(200, 200))
+    popup.open()
 
 
 class SignupScreen(Screen):
@@ -25,8 +26,7 @@ class SignupScreen(Screen):
 
     def signup(self, pw, repw):
         if pw == repw and (pw and repw):
-            key_file = AESCrypto.create_keys(pw)
-            key_file.save_to_file()
+            controller.create_keys(pw)
             self.manager.current = 'login'
         elif not pw and not repw:
             popup = Popup(title='Empty password', content=Label(text='Password cannot be empty'),
@@ -42,19 +42,21 @@ class LoginScreen(Screen):
     Builder.load_file('gui/loginscreen.kv')
 
     def verify(self, pw):
-        key_file = KeyFile.load_from_file()
         try:
             global AES_CRYPTO
-            AES_CRYPTO = AESCrypto(key_file, pw)
+            AES_CRYPTO = controller.verify_pw(pw)
             self.manager.current = 'main'
         except WrongPassword as err:
-            popup = Popup(title='Wrong password', content=Label(text=err.__str__()),
-                          size_hint=(None, None), size=(200, 200))
-            popup.open()
+            open_popup('Wrong password', err)
 
 
 class LoadDialog(FloatLayout):
     load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
+
+
+class SaveDialog(FloatLayout):
+    save = ObjectProperty(None)
     cancel = ObjectProperty(None)
 
 
@@ -66,19 +68,16 @@ class MainScreen(Screen):
      oram function, splitting file, encrypting and decrypting file"""
 
     def background_task(self):
-        self.oram = PathORAM()
-        self.oram.setup_cloud()
+        controller.setup_cloud()
         self.stop.set()
 
     def on_pre_enter(self, *args):
-        self.stash = Stash()
+        controller.setup_stash()
         # use thread for background task, use clock in a background task to access the ui
         threading.Thread(target=self.background_task).start()
-        # TODO: create file and position map
-        # TODO: read file map and display uploaded files in the listview
-        file_label = self.file_view.add_node(TreeViewLabel(text='Files', is_open=True))
-        # TODO: remove this node, add the real files from the filemap
-        # self.file_view.add_node(TreeViewLabel(text='Test.txt'), file_label)
+        file_names = controller.get_uploaded_file_names()
+        for file_name in file_names:
+            self.file_view.add_node(TreeViewLabel(text=file_name))
 
     def dismiss_popup(self):
         self._popup.dismiss()
@@ -93,12 +92,40 @@ class MainScreen(Screen):
             self.file_input = file.read()
 
         # TODO: move it to a background thread, if necessary
-        chunkfile = ChunkFile(os.path.basename(filename[0]), self.file_input, AES_CRYPTO)
-        chunkfile.split()
+        filename = os.path.basename(filename[0])
+        controller.split_file_input(filename, self.file_input, AES_CRYPTO)
+        self.file_view.add_node(TreeViewLabel(text=filename))
         self.dismiss_popup()
 
+    def get_selected_node(self):
+        selected_node = self.file_view.selected_node
+        if selected_node is None:
+            print('No selected Node')
+            raise NoSelectedNode('No file has been selected.')
+        return selected_node.text
+
     def select_location(self):
-        print(2)
+        try:
+            self.selected_node_text = self.get_selected_node()
+        except NoSelectedNode as err:
+            open_popup('Download error', err)
+            return
+        print(self.selected_node_text)
+        # content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
+        # self._popup = Popup(title="Save file", content=content,
+        #                   size_hint=(0.9, 0.9))
+        # self._popup.open()
+
+    def save(self, path, filename):
+        # TODO: retrieve filename from keyfile to identify dataIDs
+        # TODO: check if data items are stored in the stash otherwise download them from the cloud
+        self.dismiss_popup()
 
     def delete_selected_file(self):
-        print(3)
+        try:
+            self.selected_node_text = self.get_selected_node()
+        except NoSelectedNode as err:
+            open_popup('Delete error', err)
+            return
+        print(self.selected_node_text)
+        # TODO: delete selected file from file.map, position map and maybe stash

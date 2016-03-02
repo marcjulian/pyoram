@@ -14,3 +14,9 @@ class ErrorInCloudMap(Exception):
     def __init__(self, message, reason=None):
         super(ErrorInCloudMap, self).__init__(message)
         self._reason = reason
+
+
+class NoSelectedNode(Exception):
+    def __init__(self, message, reason=None):
+        super(NoSelectedNode, self).__init__(message)
+        self._reason = reason

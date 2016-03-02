@@ -6,8 +6,8 @@ import base64
 import logging
 
 from pyoram import utils
+from pyoram.core import config
 from pyoram.exceptions import ErrorInCloudMap
-from pyoram.core.chunk_file import BLOCK_SIZE
 
 JSON_TOKEN = 'token'
 JSON_INIT = 'init'
@@ -49,7 +49,7 @@ class Cloud:
 
     @classmethod
     def get_random_byte_len(cls):
-        return int(RANDOM_BYTE_FACTOR * BLOCK_SIZE)
+        return int(RANDOM_BYTE_FACTOR * config.BLOCK_SIZE)
 
     def setup_cloud(self, max_block_size):
         if not self.cloud_init:
