@@ -39,4 +39,4 @@ Prof. Dr. Steve Gordon is the advisor, who helps defining the requirements for t
 
 ## Copyright and license
 
-Code and documentation copyright 2016 marcjulian. Code released under [the MIT license](https://github.com/marcjulian/pyoram/blob/master/LICENSE.md).
+Code and documentation copyright 2016 marcjulian. Code released under [the MIT license](https://github.com/marcjulian/pyoram/blob/master/LICENSE.md). Docs released under [Creative Commons](https://github.com/marcjulian/pyoram/blob/master/docs/LICENSE).
