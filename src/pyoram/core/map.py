@@ -48,6 +48,26 @@ class FileMap:
             file_data = json.load(file_map)
             return file_data[JSON_ID_COUNTER]
 
+    def get_data_ids_of_file(self, filename):
+        with data.open_data_file(utils.FILE_MAP_FILE_NAME, utils.READ_MODE) as file_map:
+            file_data = json.load(file_map)
+            for file in file_data[JSON_FILES]:
+                if file[JSON_FILE_NAME] == filename:
+                    return file[JSON_DATA_ITEMS]
+
+    def delete_file(self, filename):
+        with data.open_data_file(utils.FILE_MAP_FILE_NAME, utils.READ_WRITE_MODE) as file_map:
+            file_data = json.load(file_map)
+            files = file_data[JSON_FILES]
+            for entry in list(files):
+                if entry[JSON_FILE_NAME] == filename:
+                    files.remove(entry)
+                    break
+
+            file_map.seek(0)
+            json.dump(file_data, file_map, indent=2, sort_keys=True)
+            file_map.truncate()
+
 
 class PositionMap:
     def __init__(self):
@@ -62,3 +82,14 @@ class PositionMap:
                 {JSON_LEAF_ID: PathORAM.get_random_leaf_id(), JSON_DATA_ID: data_id, JSON_IV: iv, JSON_HMAC: hmac})
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
+            position_map.truncate()
+
+    def delete_data_ids(self, data_ids):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in list(position_data):
+                if entry[JSON_DATA_ID] in data_ids:
+                    position_data.remove(entry)
+            position_map.seek(0)
+            json.dump(position_data, position_map, indent=2, sort_keys=True)
+            position_map.truncate()

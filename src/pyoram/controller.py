@@ -2,7 +2,7 @@ from pyoram.crypto.aes_crypto import AESCrypto
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.core.oram import PathORAM
 from pyoram.core.stash import Stash
-from pyoram.core.map import FileMap
+from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.chunk_file import ChunkFile
 
 
@@ -30,3 +30,10 @@ def get_uploaded_file_names():
 
 def split_file_input(filename, file_input, aes_crypto):
     ChunkFile(filename, file_input, aes_crypto).split()
+
+
+def delete_selected_node(filename):
+    data_ids = FileMap().get_data_ids_of_file(filename)
+    PositionMap().delete_data_ids(data_ids)
+    Stash().delete_files(data_ids)
+    FileMap().delete_file(filename)

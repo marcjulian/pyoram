@@ -67,14 +67,14 @@ class MainScreen(Screen):
     """ TODO: file chooser button and show data tree, create stash,
      oram function, splitting file, encrypting and decrypting file"""
 
-    def background_task(self):
+    def setup_cloud_task(self):
         controller.setup_cloud()
         self.stop.set()
 
     def on_pre_enter(self, *args):
         controller.setup_stash()
         # use thread for background task, use clock in a background task to access the ui
-        threading.Thread(target=self.background_task).start()
+        threading.Thread(target=self.setup_cloud_task).start()
         file_names = controller.get_uploaded_file_names()
         for file_name in file_names:
             self.file_view.add_node(TreeViewLabel(text=file_name))
@@ -87,26 +87,28 @@ class MainScreen(Screen):
         self._popup = Popup(title="Load file", content=content, size_hint=(0.9, 0.9))
         self._popup.open()
 
+    def split_input_file_task(self):
+        controller.split_file_input(self.filename, self.file_input, AES_CRYPTO)
+        self.stop.set()
+
     def load(self, path, filename):
         with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
             self.file_input = file.read()
 
-        # TODO: move it to a background thread, if necessary
-        filename = os.path.basename(filename[0])
-        controller.split_file_input(filename, self.file_input, AES_CRYPTO)
-        self.file_view.add_node(TreeViewLabel(text=filename))
+        self.filename = os.path.basename(filename[0])
+        threading.Thread(target=self.split_input_file_task).start()
+        self.file_view.add_node(TreeViewLabel(text=self.filename))
         self.dismiss_popup()
 
     def get_selected_node(self):
         selected_node = self.file_view.selected_node
         if selected_node is None:
-            print('No selected Node')
             raise NoSelectedNode('No file has been selected.')
-        return selected_node.text
+        return selected_node
 
     def select_location(self):
         try:
-            self.selected_node_text = self.get_selected_node()
+            self.selected_node_text = self.get_selected_node().text
         except NoSelectedNode as err:
             open_popup('Download error', err)
             return
@@ -121,11 +123,16 @@ class MainScreen(Screen):
         # TODO: check if data items are stored in the stash otherwise download them from the cloud
         self.dismiss_popup()
 
+    def delete_file_task(self):
+        controller.delete_selected_node(self.selected_node_text)
+        self.stop.set()
+
     def delete_selected_file(self):
         try:
-            self.selected_node_text = self.get_selected_node()
+            self.selected_node = self.get_selected_node()
+            self.selected_node_text = self.selected_node.text
         except NoSelectedNode as err:
             open_popup('Delete error', err)
             return
-        print(self.selected_node_text)
-        # TODO: delete selected file from file.map, position map and maybe stash
+        self.file_view.remove_node(self.selected_node)
+        threading.Thread(target=self.delete_file_task).start()
