@@ -31,3 +31,12 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 PyORAM is currently under construction and further features will be added shortly.
 For more information visit the kanban board at [Taiga.io](https://tree.taiga.io/project/marcjulian-pyoram/).
+
+## Acknowledgements
+
+The project is the main task of my internship at SIIT in the study programm Business Information Systems (Bachelor of Science).
+Prof. Dr. Steve Gordon is the advisor, who helps defining the requirements for the project and assits me with any further questions.
+
+## Copyright and license
+
+Code and documentation copyright 2016 marcjulian. Code released under [the MIT license](https://github.com/marcjulian/pyoram/blob/master/LICENSE.md).
