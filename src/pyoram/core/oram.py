@@ -9,6 +9,7 @@ LEAF_MIN = int(math.pow(2, config.ORAM_LEVEL) - 1)
 LEAF_MAX = int(math.pow(2, config.ORAM_LEVEL + 1) - 2)
 
 
+# TODO: add ORAM functions here: downloading a path, uploading a file to the cloud
 class PathORAM:
     def __init__(self):
         self.cloud = Cloud()

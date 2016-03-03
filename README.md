@@ -34,8 +34,8 @@ For more information visit the kanban board at [Taiga.io](https://tree.taiga.io/
 
 ## Acknowledgements
 
-The project is the main task of my internship at SIIT in the study programm Business Information Systems (Bachelor of Science).
-Prof. Dr. Steve Gordon is the advisor, who helps defining the requirements for the project and assits me with any further questions.
+The project is the main task of my internship at SIIT in the study program Business Information Systems (Bachelor of Science).
+Prof. Dr. Steve Gordon is the advisor, who helps defining the requirements for the project and assists me with any further questions.
 
 ## Copyright and license
 
