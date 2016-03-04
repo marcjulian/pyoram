@@ -64,8 +64,6 @@ class MainScreen(Screen):
     file_view = ObjectProperty(None)
     Builder.load_file('gui/mainscreen.kv')
     stop = threading.Event()
-    """ TODO: file chooser button and show data tree, create stash,
-     oram function, splitting file, encrypting and decrypting file"""
 
     def setup_cloud_task(self):
         controller.setup_cloud()
@@ -84,7 +82,7 @@ class MainScreen(Screen):
 
     def select_file(self):
         content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
-        self._popup = Popup(title="Load file", content=content, size_hint=(0.9, 0.9))
+        self._popup = Popup(title="Upload file", content=content, size_hint=(0.9, 0.9))
         self._popup.open()
 
     def split_input_file_task(self):
@@ -112,15 +110,21 @@ class MainScreen(Screen):
         except NoSelectedNode as err:
             open_popup('Download error', err)
             return
-        print(self.selected_node_text)
-        # content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
-        # self._popup = Popup(title="Save file", content=content,
-        #                   size_hint=(0.9, 0.9))
-        # self._popup.open()
+        # TODO: add selected_node_text to the savedialog
+        content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
+        self._popup = Popup(title="Download file", content=content,
+                            size_hint=(0.9, 0.9))
+        self._popup.open()
+
+    def download_file_task(self):
+        # TODO: add aes_crypto here
+        controller.download_selected_file(self.selected_node_text, self.path, self.filename)
+        self.stop.set()
 
     def save(self, path, filename):
-        # TODO: retrieve filename from keyfile to identify dataIDs
-        # TODO: check if data items are stored in the stash otherwise download them from the cloud
+        self.path = path
+        self.filename = filename
+        threading.Thread(target=self.download_file_task).start()
         self.dismiss_popup()
 
     def delete_file_task(self):

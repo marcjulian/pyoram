@@ -9,10 +9,35 @@ class Stash:
         if not data.is_folder(utils.STASH_FOLDER_NAME):
             data.create_folder(utils.STASH_FOLDER_NAME)
 
+    def get_filename(self, data_id):
+        return FILE_NAME % data_id
+
     def add_file(self, data_id, main_part):
-        with data.open_data_file_in_stash(FILE_NAME % data_id, utils.WRITE_MODE) as data_item:
+        with data.open_data_file_in_stash(self.get_filename(data_id), utils.WRITE_MODE) as data_item:
             data_item.write(main_part)
 
-    def delete_files(self, data_ids):
+    def open_file(self, data_id):
+        with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_MODE) as data_item:
+            data_block = data_item.read()
+            return data_block
+
+    def delete_data_items(self, data_ids):
         for data_id in data_ids:
-            data.delete_file__in_stash(FILE_NAME % data_id)
+            self.delete_data_item(data_id)
+
+    def delete_data_item(self, data_id):
+        data.delete_file__in_stash(self.get_filename(data_id))
+
+    def get_data_items(self, data_ids):
+        data_items = []
+        for data_id in list(data_ids):
+            data_item = self.get_data_item(data_id)
+            if data_item is not None:
+                data_items.append((data_id, data_item))
+                data_ids.remove(data_id)
+        return data_ids, data_items
+
+    def get_data_item(self, data_id):
+        if data.is_file_in_stash(self.get_filename(data_id)):
+            with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_MODE) as data_item:
+                return data_item.read()

@@ -28,3 +28,26 @@ class PathORAM:
     @classmethod
     def get_random_leaf_id(cls):
         return random.randrange(LEAF_MIN, LEAF_MAX + 1)
+
+    # Find the path from root to leaf
+    # __author__: Dr. Steve Gordon
+    def path_to_leaf(self, leaf):
+        path = [0] * (config.ORAM_LEVEL + 1)
+        leafmin = LEAF_MIN
+        leafmax = LEAF_MAX
+        for curlevel in range(config.ORAM_LEVEL):
+            mid = (leafmax - leafmin) // 2 + leafmin
+            if leaf <= mid:
+                path[curlevel + 1] = path[curlevel] * 2 + 1
+                leafmax = mid
+            else:
+                path[curlevel + 1] = path[curlevel] * 2 + 2
+                leafmin = mid + 1
+        return path
+
+    # Find the path from leaf to root
+    # __author__: Dr. Steve Gordon
+    def path_to_root(self, leaf):
+        path = self.path_to_leaf(leaf)
+        path.reverse()
+        return path

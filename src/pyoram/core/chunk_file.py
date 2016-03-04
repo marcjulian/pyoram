@@ -10,6 +10,7 @@ from pyoram.core.stash import Stash
 # (also consider the dataID +  b"\x80")
 class ChunkFile:
     def __init__(self, file_name, file_input, aes_crypto):
+        # TODO: change so it can be used for splitting and combining
         self.file_name = file_name
         self.file_input = file_input
         self.aes_crypto = aes_crypto
@@ -18,6 +19,7 @@ class ChunkFile:
         logging.info('length of the selected file %d ' % len(file_input))
 
     def split(self):
+        # TODO: add filename and file_input to signature
         data_items = []
         for x in range(0, len(self.file_input), config.BLOCK_SIZE):
             # TODO: generate data item id (as int32 or int64) and add it to encrypt

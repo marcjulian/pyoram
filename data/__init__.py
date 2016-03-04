@@ -14,6 +14,10 @@ def open_data_file_in_stash(filename, mode):
     return open(os.path.join(stash_dir, filename), mode)
 
 
+def is_file_in_stash(filename):
+    return os.path.isfile(os.path.join(stash_dir, filename))
+
+
 def delete_file__in_stash(filename):
     if os.path.isfile(os.path.join(stash_dir, filename)):
         os.remove(os.path.join(stash_dir, filename))
