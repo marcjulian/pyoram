@@ -47,11 +47,9 @@ def download_selected_file(selected_filename, path, filename_to_save_to):
     # data_token[1] are tuples of (data_id, data_item)
     data_items = data_token[1]
     if remaining_data_ids:
-        # TODO: get the leaf_ids for the remaining data_ids from the position map
-        # TODO: call ORAM to download the path, check which data is the corresponding data item for the data id,
-        # TODO: ORAM should also upload some dummy data or something from the stash
-        # TODO: add downloaded data_item tuple to data_items
-        print('still data ids here')
+        leaf_ids = PositionMap().get_leaf_ids(remaining_data_ids)
+        oram_data_items = PathORAM().download_data_items(remaining_data_ids, leaf_ids)
+        data_items.extend(oram_data_items)
 
     # combining the data_items to a file starting with the lowest data_id
     data_items.sort()

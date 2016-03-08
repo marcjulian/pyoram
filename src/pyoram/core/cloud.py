@@ -57,8 +57,19 @@ class Cloud:
             logging.info('start setup of the cloud')
             for block in range(0, max_block_size):
                 logging.info('upload file %d' % block)
-                self.dbx.files_upload(base64.urlsafe_b64encode(os.urandom(self.get_random_byte_len())).decode(),
-                                      '/' + FILE_NAME % block)
+                self.dbx.files_upload(self.create_dummy_data(), '/' + FILE_NAME % block)
             logging.info('end setup of the cloud')
             self.cloud_init = True
             self.update_cloud_map()
+
+    def create_dummy_data(self):
+        return base64.urlsafe_b64encode(os.urandom(self.get_random_byte_len())).decode()
+
+    def download_node(self, node):
+        # TODO: access dropbox to download block(nodeid).oram
+        pass
+
+    def upload_node(self, node, content=None):
+        # TODO: access dropbox to upload block(nodeid).oram
+        # TODO: if content is none create random content
+        pass

@@ -85,11 +85,31 @@ class PositionMap:
             position_map.truncate()
 
     def delete_data_ids(self, data_ids):
+        copy_data_ids = list(data_ids)
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
             for entry in list(position_data):
                 if entry[JSON_DATA_ID] in data_ids:
                     position_data.remove(entry)
+                    copy_data_ids.remove(entry[JSON_DATA_ID])
+                    if not copy_data_ids:
+                        # stop iterating when all data ids are deleted
+                        break
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
             position_map.truncate()
+
+    def get_leaf_ids(self, remaining_data_ids):
+        copy_remaining_data_ids = list(remaining_data_ids)
+        leaf_ids = []
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] in remaining_data_ids:
+                    leaf_ids.append(entry[JSON_LEAF_ID])
+                    copy_remaining_data_ids.remove(entry[JSON_DATA_ID])
+                    if not copy_remaining_data_ids:
+                        # stop iterating when all leaf ids are found
+                        break
+            # set removes duplicate leaf ids
+            return list(set(leaf_ids))
