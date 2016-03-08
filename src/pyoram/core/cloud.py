@@ -4,6 +4,8 @@ import json
 import os
 import base64
 import logging
+import string
+import random
 
 from pyoram import utils
 from pyoram.core import config
@@ -14,6 +16,8 @@ JSON_INIT = 'init'
 TOKEN_PLACEHOLDER = 'My token'
 FILE_NAME = 'block%d.oram'
 RANDOM_BYTE_FACTOR = 0.75
+
+RESPONSE_CODE_OK = 200
 
 
 class Cloud:
@@ -57,7 +61,7 @@ class Cloud:
             logging.info('start setup of the cloud')
             for block in range(0, max_block_size):
                 logging.info('upload file %d' % block)
-                self.dbx.files_upload(self.create_dummy_data(), '/' + FILE_NAME % block)
+                self.dbx.files_upload(self.create_dummy_data2(), self.create_path_name(block))
             logging.info('end setup of the cloud')
             self.cloud_init = True
             self.update_cloud_map()
@@ -65,11 +69,25 @@ class Cloud:
     def create_dummy_data(self):
         return base64.urlsafe_b64encode(os.urandom(self.get_random_byte_len())).decode()
 
+    def create_dummy_data2(self):
+        chars = string.ascii_letters + string.digits
+        dummy_data = ''.join(random.choice(chars) for _ in range(self.get_random_byte_len()))
+        return base64.urlsafe_b64encode(dummy_data.encode()).decode()
+
     def download_node(self, node):
-        # TODO: access dropbox to download block(nodeid).oram
-        pass
+        # response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response
+        response_token = self.dbx.files_download(self.create_path_name(node))
+        # Response model carries the content
+        response = response_token[1]
+        if response.status_code == RESPONSE_CODE_OK:
+            return response.content
+        return None
 
     def upload_node(self, node, content=None):
         # TODO: access dropbox to upload block(nodeid).oram
+        # TODO: need to include override rights
         # TODO: if content is none create random content
         pass
+
+    def create_path_name(self, node):
+        return '/' + FILE_NAME % node

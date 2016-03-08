@@ -2,6 +2,7 @@ import base64
 import binascii
 import os
 import six
+import struct
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
@@ -13,6 +14,8 @@ from cryptography.hazmat.primitives.hmac import HMAC
 
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
+
+FORMAT_CHAR = '>Q'
 
 
 class InvalidToken(Exception):
@@ -95,7 +98,7 @@ class AESCrypto(object):
         if not isinstance(data, bytes):
             raise TypeError("data must be bytes.")
 
-        if not isinstance(data_id, bytes):
+        if not isinstance(data_id, int):
             raise TypeError("data_id must be bytes.")
 
         # PKCS7 padding
@@ -106,7 +109,7 @@ class AESCrypto(object):
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
         main_parts = (
-            b"\x80" + ciphertext + data_id
+            b"\x80" + ciphertext + struct.pack(FORMAT_CHAR, data_id)
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
@@ -136,7 +139,7 @@ class AESCrypto(object):
             raise InvalidToken
 
         # TODO: retrieve data_ID
-        ciphertext = data[1:]
+        ciphertext = data[1:-8]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:
@@ -151,3 +154,15 @@ class AESCrypto(object):
         except ValueError:
             raise InvalidToken
         return plaintext
+
+    def retrieve_data_id(self, token):
+        try:
+            data = self.from_base64(token)
+        except (TypeError, binascii.Error):
+            raise InvalidToken
+
+        try:
+            data_id, = struct.unpack(FORMAT_CHAR, data[-8:])
+        except struct.error:
+            raise InvalidToken
+        return data_id

@@ -53,13 +53,23 @@ class PathORAM:
         return path
 
     def access_oram(self, path_to_root, data_ids=None):
-        # TODO: read path (return data items of the path, real data will be stored in the stash or used for combining)
+        data_items = []
         for node in path_to_root:
-            print('downloading node %s' % node)
-            self.cloud.download_node(node)
-        # TODO: write path (choose data from the stash otherwise create dummy data)
-        # TODO: return tuple (data_ids, data_item), when should it be encrypted and check for the data id?
-        pass
+            # TODO: return data items, if the data id is in data ids otherwise store it in the stash
+            # TODO: check for data id
+            data_item = self.read_node(node)
+            # TODO: add to data_items if the id is in data_ids
+            # TODO: add to stash anyways (but drop dummy data)
+        for node in path_to_root:
+            self.write_node(node)
+            # TODO: return tuple (data_ids, data_item)
+
+    def read_node(self, node):
+        print('downloading node %s' % node)
+        return self.cloud.download_node(node)
+
+    def write_node(self, node):
+        self.cloud.upload_node(node)
 
     def download_data_items(self, remaining_data_ids, leaf_ids):
         data_items = []
@@ -67,6 +77,4 @@ class PathORAM:
             path_to_root = self.path_to_root(leaf_id)
             self.access_oram(path_to_root, remaining_data_ids)
         # add data item with data id: data_items.append((data_id, data_item))
-        # TODO: call ORAM to download the path, check which data is the corresponding data item for the data id,
-        # TODO: ORAM should also upload some dummy data or something from the stash
         return data_items
