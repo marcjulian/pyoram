@@ -1,6 +1,6 @@
-import data
 import json
 
+import data
 from pyoram import utils
 from pyoram.core.oram import PathORAM
 
@@ -113,3 +113,10 @@ class PositionMap:
                         break
             # set removes duplicate leaf ids
             return list(set(leaf_ids))
+
+    def get_iv_and_hmac(self, data_id):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] == data_id:
+                    return entry[JSON_IV], entry[JSON_HMAC]

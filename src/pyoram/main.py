@@ -1,13 +1,11 @@
-import data
-
 from kivy.app import App
+from kivy.config import Config
 from kivy.uix.screenmanager import ScreenManager
 
-from pyoram.ui import SignupScreen, LoginScreen, MainScreen
+import data
 from pyoram import utils
 from pyoram.crypto.keyfile import KeyFile
-
-from kivy.config import Config
+from pyoram.ui import SignupScreen, LoginScreen, MainScreen
 Config.set('graphics', 'width', '500')
 Config.set('graphics', 'height', '300')
 

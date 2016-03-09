@@ -1,9 +1,12 @@
-from pyoram.crypto.aes_crypto import AESCrypto
-from pyoram.crypto.keyfile import KeyFile
+import os
+
+from pyoram.core.chunk_file import ChunkFile
+from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.oram import PathORAM
 from pyoram.core.stash import Stash
-from pyoram.core.map import FileMap, PositionMap
-from pyoram.core.chunk_file import ChunkFile
+from pyoram.crypto.aes_crypto import AESCrypto
+from pyoram.crypto.keyfile import KeyFile
+from pyoram import utils
 
 
 def create_keys(pw):
@@ -29,7 +32,7 @@ def get_uploaded_file_names():
 
 
 def split_file_input(filename, file_input, aes_crypto):
-    ChunkFile(filename, file_input, aes_crypto).split()
+    ChunkFile(aes_crypto).split(filename, file_input)
 
 
 def delete_selected_node(filename):
@@ -39,7 +42,12 @@ def delete_selected_node(filename):
     FileMap().delete_file(filename)
 
 
-def download_selected_file(selected_filename, path, filename_to_save_to):
+def save_file(combined_file, path, filename_to_save_to):
+    with open(os.path.join(path, filename_to_save_to), utils.WRITE_MODE) as file:
+        file.write(combined_file)
+
+
+def download_selected_file(selected_filename, path, filename_to_save_to, aes_crypto):
     data_ids = FileMap().get_data_ids_of_file(selected_filename)
     data_token = Stash().get_data_items(data_ids)
     # data_token[0] are the remaining data_ids, which are not stored in the stash
@@ -53,9 +61,7 @@ def download_selected_file(selected_filename, path, filename_to_save_to):
 
     # combining the data_items to a file starting with the lowest data_id
     data_items.sort()
-    # TODO: need aes_crypto in the signature to call chunk_file
-    # TODO: decrypt and combine the data to one file, after decrypting encrypt the data again with new IV and store it with the same data_id in the stash
-    # TODO: save the file to path and filename_to_save_to
-    print('decrypt data_item')
-    print('combine data_item now')
-    print('save file to the location')
+    # TODO: handle error when data_items are missing
+    combined_file = ChunkFile(aes_crypto).combine(data_items)
+    # TODO: after decrypting encrypt the data again with new IV and store it with the same data_id in the stash
+    save_file(combined_file, path, filename_to_save_to)

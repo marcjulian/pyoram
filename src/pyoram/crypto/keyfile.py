@@ -1,6 +1,6 @@
 import json
-import data
 
+import data
 from pyoram import utils
 from pyoram.exceptions import ErrorInKeyMap
 

@@ -3,6 +3,7 @@ import random
 
 from pyoram.core import config
 from pyoram.core.cloud import Cloud
+from pyoram.crypto.aes_crypto import AESCrypto, InvalidDataId
 
 # The height of the binary tree (as integer)
 LEAF_MIN = int(math.pow(2, config.ORAM_LEVEL) - 1)
@@ -54,27 +55,34 @@ class PathORAM:
 
     def access_oram(self, path_to_root, data_ids=None):
         data_items = []
+        # TODO: should data_items_stash be global?
+        data_items_stash = []
         for node in path_to_root:
-            # TODO: return data items, if the data id is in data ids otherwise store it in the stash
-            # TODO: check for data id
             data_item = self.read_node(node)
-            # TODO: add to data_items if the id is in data_ids
-            # TODO: add to stash anyways (but drop dummy data)
+            try:
+                data_id = AESCrypto.retrieve_data_id(data_item)
+                if data_id in data_ids:
+                    data_items.append((data_id, data_item))
+                data_items_stash.append((data_id, data_item))
+                # TODO: save the data_items to the stash (should it happen in another thread?)
+                # TODO: before saving the data items into the stash, decrypt and re-encrypt with a new iv
+            except InvalidDataId:
+                # dummy data found
+                pass
         for node in path_to_root:
             self.write_node(node)
-            # TODO: return tuple (data_ids, data_item)
+        return data_items
 
     def read_node(self, node):
-        print('downloading node %s' % node)
         return self.cloud.download_node(node)
 
     def write_node(self, node):
-        self.cloud.upload_node(node)
+        # TODO: get random content from stash, which would fit into the node based on the leaf id
+        self.cloud.upload_to_node(node)
 
     def download_data_items(self, remaining_data_ids, leaf_ids):
         data_items = []
         for leaf_id in leaf_ids:
             path_to_root = self.path_to_root(leaf_id)
-            self.access_oram(path_to_root, remaining_data_ids)
-        # add data item with data id: data_items.append((data_id, data_item))
+            data_items.extend(self.access_oram(path_to_root, remaining_data_ids))
         return data_items

@@ -1,12 +1,13 @@
-import dropbox
-import data
-import json
-import os
 import base64
+import json
 import logging
-import string
+import os
 import random
+import struct
 
+import dropbox
+
+import data
 from pyoram import utils
 from pyoram.core import config
 from pyoram.exceptions import ErrorInCloudMap
@@ -15,7 +16,7 @@ JSON_TOKEN = 'token'
 JSON_INIT = 'init'
 TOKEN_PLACEHOLDER = 'My token'
 FILE_NAME = 'block%d.oram'
-RANDOM_BYTE_FACTOR = 0.75
+RANDOM_BYTE_FACTOR = 0.74
 
 RESPONSE_CODE_OK = 200
 
@@ -61,18 +62,17 @@ class Cloud:
             logging.info('start setup of the cloud')
             for block in range(0, max_block_size):
                 logging.info('upload file %d' % block)
-                self.dbx.files_upload(self.create_dummy_data2(), self.create_path_name(block))
+                self.dbx.files_upload(self.create_dummy_data(), self.create_path_name(block))
             logging.info('end setup of the cloud')
             self.cloud_init = True
             self.update_cloud_map()
 
     def create_dummy_data(self):
-        return base64.urlsafe_b64encode(os.urandom(self.get_random_byte_len())).decode()
-
-    def create_dummy_data2(self):
-        chars = string.ascii_letters + string.digits
-        dummy_data = ''.join(random.choice(chars) for _ in range(self.get_random_byte_len()))
-        return base64.urlsafe_b64encode(dummy_data.encode()).decode()
+        dummy_id = random.randrange(config.DUMMY_ID_START, config.DUMMY_ID_STOP)
+        dummy_data = (
+            os.urandom(self.get_random_byte_len()) + struct.pack(config.FORMAT_CHAR, dummy_id)
+        )
+        return base64.urlsafe_b64encode(dummy_data).decode()
 
     def download_node(self, node):
         # response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response
@@ -83,7 +83,7 @@ class Cloud:
             return response.content
         return None
 
-    def upload_node(self, node, content=None):
+    def upload_to_node(self, node, content=None):
         # TODO: access dropbox to upload block(nodeid).oram
         # TODO: need to include override rights
         # TODO: if content is none create random content

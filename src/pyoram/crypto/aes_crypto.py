@@ -1,25 +1,28 @@
 import base64
 import binascii
 import os
-import six
 import struct
 
+import six
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.hmac import HMAC
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.keywrap import aes_key_wrap, aes_key_unwrap, InvalidUnwrap
-from cryptography.hazmat.primitives.hmac import HMAC
 
+from pyoram.core import config
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import WrongPassword
-
-FORMAT_CHAR = '>Q'
 
 
 class InvalidToken(Exception):
     # TODO: catch InvalidToken for the user to inform about the error, maybe add a text for the different invalidtokens
+    pass
+
+
+class InvalidDataId(Exception):
     pass
 
 
@@ -99,7 +102,7 @@ class AESCrypto(object):
             raise TypeError("data must be bytes.")
 
         if not isinstance(data_id, int):
-            raise TypeError("data_id must be bytes.")
+            raise TypeError("data_id must be int.")
 
         # PKCS7 padding
         padder = padding.PKCS7(algorithms.AES.block_size).padder()
@@ -109,7 +112,7 @@ class AESCrypto(object):
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
         main_parts = (
-            b"\x80" + ciphertext + struct.pack(FORMAT_CHAR, data_id)
+            b"\x80" + ciphertext + struct.pack(config.FORMAT_CHAR, data_id)
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
@@ -138,7 +141,6 @@ class AESCrypto(object):
         except InvalidSignature:
             raise InvalidToken
 
-        # TODO: retrieve data_ID
         ciphertext = data[1:-8]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
@@ -155,14 +157,19 @@ class AESCrypto(object):
             raise InvalidToken
         return plaintext
 
-    def retrieve_data_id(self, token):
+    @classmethod
+    def retrieve_data_id(cls, token):
         try:
-            data = self.from_base64(token)
+            data = cls.from_base64(token)
         except (TypeError, binascii.Error):
             raise InvalidToken
 
         try:
-            data_id, = struct.unpack(FORMAT_CHAR, data[-8:])
+            data_id, = struct.unpack(config.FORMAT_CHAR, data[-8:])
         except struct.error:
             raise InvalidToken
+
+        if data_id in config.get_dummy_id_range():
+            raise InvalidDataId
+
         return data_id

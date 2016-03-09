@@ -5,9 +5,9 @@ from kivy.lang import Builder
 from kivy.properties import ObjectProperty
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
 from kivy.uix.treeview import TreeViewLabel
-from kivy.uix.popup import Popup
 
 from pyoram import utils, controller
 from pyoram.exceptions import WrongPassword, NoSelectedNode
@@ -87,6 +87,7 @@ class MainScreen(Screen):
 
     def split_input_file_task(self):
         controller.split_file_input(self.filename, self.file_input, AES_CRYPTO)
+        self.file_view.add_node(TreeViewLabel(text=self.filename))
         self.stop.set()
 
     def load(self, path, filename):
@@ -95,7 +96,6 @@ class MainScreen(Screen):
 
         self.filename = os.path.basename(filename[0])
         threading.Thread(target=self.split_input_file_task).start()
-        self.file_view.add_node(TreeViewLabel(text=self.filename))
         self.dismiss_popup()
 
     def get_selected_node(self):
@@ -117,8 +117,7 @@ class MainScreen(Screen):
         self._popup.open()
 
     def download_file_task(self):
-        # TODO: add aes_crypto here
-        controller.download_selected_file(self.selected_node_text, self.path, self.filename)
+        controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
         self.stop.set()
 
     def save(self, path, filename):
