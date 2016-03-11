@@ -17,6 +17,7 @@ class ChunkFile:
         logging.info('length of the selected file %d ' % len(file_input))
         data_items = []
         for x in range(0, len(file_input), config.BLOCK_SIZE):
+            # TODO: don't use dummy data id range
             data_id = self.data_id_counter
             self.data_id_counter += 1
             data_items.append(data_id)

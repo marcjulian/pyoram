@@ -118,6 +118,7 @@ class MainScreen(Screen):
 
     def download_file_task(self):
         controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
+        # TODO: inform user about download status (successfull or not)
         self.stop.set()
 
     def save(self, path, filename):

@@ -65,3 +65,4 @@ def download_selected_file(selected_filename, path, filename_to_save_to, aes_cry
     combined_file = ChunkFile(aes_crypto).combine(data_items)
     # TODO: after decrypting encrypt the data again with new IV and store it with the same data_id in the stash
     save_file(combined_file, path, filename_to_save_to)
+    # TODO: add logger for downloading

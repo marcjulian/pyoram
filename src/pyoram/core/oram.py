@@ -57,6 +57,7 @@ class PathORAM:
         data_items = []
         # TODO: should data_items_stash be global?
         data_items_stash = []
+        # TODO: move the for loop to read_node
         for node in path_to_root:
             data_item = self.read_node(node)
             try:
@@ -64,11 +65,12 @@ class PathORAM:
                 if data_id in data_ids:
                     data_items.append((data_id, data_item))
                 data_items_stash.append((data_id, data_item))
-                # TODO: save the data_items to the stash (should it happen in another thread?)
+                # TODO: save the data_items to the stash before write_node
                 # TODO: before saving the data items into the stash, decrypt and re-encrypt with a new iv
             except InvalidDataId:
                 # dummy data found
                 pass
+        # TODO: move the for loop to write_node
         for node in path_to_root:
             self.write_node(node)
         return data_items
@@ -86,3 +88,8 @@ class PathORAM:
             path_to_root = self.path_to_root(leaf_id)
             data_items.extend(self.access_oram(path_to_root, remaining_data_ids))
         return data_items
+
+    def update_data(self):
+        # TODO: triggered by upload a new file
+        # TODO: access oram
+        pass
