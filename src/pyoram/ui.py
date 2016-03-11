@@ -81,16 +81,16 @@ class MainScreen(Screen):
         self._popup.dismiss()
 
     def select_file(self):
-        content = LoadDialog(load=self.load, cancel=self.dismiss_popup)
+        content = LoadDialog(load=self.upload_file, cancel=self.dismiss_popup)
         self._popup = Popup(title="Upload file", content=content, size_hint=(0.9, 0.9))
         self._popup.open()
 
     def split_input_file_task(self):
-        controller.split_file_input(self.filename, self.file_input, AES_CRYPTO)
+        controller.save_file_input(self.filename, self.file_input, AES_CRYPTO)
         self.file_view.add_node(TreeViewLabel(text=self.filename))
         self.stop.set()
 
-    def load(self, path, filename):
+    def upload_file(self, path, filename):
         with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
             self.file_input = file.read()
 

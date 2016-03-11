@@ -28,16 +28,7 @@ class Stash:
     def delete_data_item(self, data_id):
         data.delete_file__in_stash(self.get_filename(data_id))
 
-    def get_data_items(self, data_ids):
-        data_items = []
-        for data_id in list(data_ids):
-            data_item = self.get_data_item(data_id)
-            if data_item is not None:
-                data_items.append((data_id, data_item))
-                data_ids.remove(data_id)
-        return data_ids, data_items
-
     def get_data_item(self, data_id):
         if data.is_file_in_stash(self.get_filename(data_id)):
             with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_MODE) as data_item:
-                return data_item.read()
+                return data_id, data_item.read()

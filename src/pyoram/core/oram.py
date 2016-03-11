@@ -4,6 +4,7 @@ import random
 from pyoram.core import config
 from pyoram.core.cloud import Cloud
 from pyoram.crypto.aes_crypto import AESCrypto, InvalidDataId
+from pyoram.core.stash import Stash
 
 # The height of the binary tree (as integer)
 LEAF_MIN = int(math.pow(2, config.ORAM_LEVEL) - 1)
@@ -53,43 +54,60 @@ class PathORAM:
         path.reverse()
         return path
 
-    def access_oram(self, path_to_root, data_ids=None):
+    def access_oram(self, path_to_root):
+        downloaded_data_items = self.read_path(path_to_root)
+        self.write_stash(downloaded_data_items)
+        self.write_path(path_to_root)
+
+    def access_oram_with_stash(self, path_to_root, data_id):
+        data_item = Stash().get_data_item(data_id)
+        # TODO: call stash
+        if not data_item:
+            # TODO: call read path
+            # TODO: call write stash (include decrypting and re-encrypting)
+            # TODO: call write path
+            print('woop')
+
+        return data_item
+
+    def read_path(self, path_to_root):
         data_items = []
-        # TODO: should data_items_stash be global?
-        data_items_stash = []
-        # TODO: move the for loop to read_node
         for node in path_to_root:
             data_item = self.read_node(node)
             try:
                 data_id = AESCrypto.retrieve_data_id(data_item)
-                if data_id in data_ids:
-                    data_items.append((data_id, data_item))
-                data_items_stash.append((data_id, data_item))
-                # TODO: save the data_items to the stash before write_node
-                # TODO: before saving the data items into the stash, decrypt and re-encrypt with a new iv
+                data_items.append((data_id, data_item))
             except InvalidDataId:
                 # dummy data found
                 pass
-        # TODO: move the for loop to write_node
-        for node in path_to_root:
-            self.write_node(node)
         return data_items
+
+    def write_path(self, path_to_root):
+        for node in path_to_root:
+            # TODO: get random content from stash, which would fit into the node based on the leaf id
+            self.write_node(node)
+
+    def write_stash(self, downloaded_data_items):
+        for downloaded_data_item in downloaded_data_items:
+            print('write to stash')
 
     def read_node(self, node):
         return self.cloud.download_node(node)
 
     def write_node(self, node):
-        # TODO: get random content from stash, which would fit into the node based on the leaf id
         self.cloud.upload_to_node(node)
 
-    def download_data_items(self, remaining_data_ids, leaf_ids):
+    def download_data_items(self, data_properties):
         data_items = []
-        for leaf_id in leaf_ids:
+        for data_property in data_properties:
+            data_id = data_property[0]
+            leaf_id = data_property[1]
             path_to_root = self.path_to_root(leaf_id)
-            data_items.extend(self.access_oram(path_to_root, remaining_data_ids))
+            data_item = self.access_oram_with_stash(path_to_root, data_id)
+            data_items.append(data_item)
         return data_items
 
     def update_data(self):
-        # TODO: triggered by upload a new file
-        # TODO: access oram
-        pass
+        for leaf in range(LEAF_MIN, LEAF_MAX + 1):
+            path_to_root = self.path_to_root(leaf)
+            self.access_oram(path_to_root)
