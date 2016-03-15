@@ -2,7 +2,7 @@ import json
 
 import data
 from pyoram import utils
-from pyoram.core.oram import PathORAM
+from pyoram.core import config
 
 # file.map
 JSON_FILES = 'files'
@@ -55,6 +55,13 @@ class FileMap:
                 if file[JSON_FILE_NAME] == filename:
                     return file[JSON_DATA_ITEMS]
 
+    def get_file_len(self, filename):
+        with data.open_data_file(utils.FILE_MAP_FILE_NAME, utils.READ_MODE) as file_map:
+            file_data = json.load(file_map)
+            for file in file_data[JSON_FILES]:
+                if file[JSON_FILE_NAME] == filename:
+                    return file[JSON_FILE_SIZE]
+
     def delete_file(self, filename):
         with data.open_data_file(utils.FILE_MAP_FILE_NAME, utils.READ_WRITE_MODE) as file_map:
             file_data = json.load(file_map)
@@ -63,7 +70,6 @@ class FileMap:
                 if entry[JSON_FILE_NAME] == filename:
                     files.remove(entry)
                     break
-
             file_map.seek(0)
             json.dump(file_data, file_map, indent=2, sort_keys=True)
             file_map.truncate()
@@ -79,7 +85,22 @@ class PositionMap:
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
             position_data.append(
-                {JSON_LEAF_ID: PathORAM.get_random_leaf_id(), JSON_DATA_ID: data_id, JSON_IV: iv, JSON_HMAC: hmac})
+                {JSON_LEAF_ID: config.get_random_leaf_id(), JSON_DATA_ID: data_id, JSON_IV: utils.byte_to_str(iv),
+                 JSON_HMAC: utils.byte_to_str(hmac)})
+            position_map.seek(0)
+            json.dump(position_data, position_map, indent=2, sort_keys=True)
+            position_map.truncate()
+
+    def update_data(self, data_id, new_iv, new_hmac, new_leaf_id=False):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] == data_id:
+                    entry[JSON_IV] = utils.byte_to_str(new_iv)
+                    entry[JSON_HMAC] = utils.byte_to_str(new_hmac)
+                    if new_leaf_id:
+                        entry[JSON_LEAF_ID] = config.get_random_leaf_id()
+                    break
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
             position_map.truncate()
@@ -106,13 +127,12 @@ class PositionMap:
             position_data = json.load(position_map)
             for entry in position_data:
                 if entry[JSON_DATA_ID] in data_ids:
-                    leaf_ids.append(entry[JSON_DATA_ID], entry[JSON_LEAF_ID])
+                    leaf_ids.append((entry[JSON_DATA_ID], entry[JSON_LEAF_ID]))
                     copy_data_ids.remove(entry[JSON_DATA_ID])
                     if not copy_data_ids:
                         # stop iterating when all leaf ids are found
                         break
-            # set removes duplicate leaf ids
-            return list(set(leaf_ids))
+            return leaf_ids
 
     def get_iv_and_hmac(self, data_id):
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:

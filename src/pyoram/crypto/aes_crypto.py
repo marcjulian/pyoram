@@ -111,6 +111,7 @@ class AESCrypto(object):
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
+        # TODO: don't store any information not encrypted on the server (=> data_id)
         main_parts = (
             b"\x80" + ciphertext + struct.pack(config.FORMAT_CHAR, data_id)
         )

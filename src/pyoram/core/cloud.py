@@ -84,10 +84,9 @@ class Cloud:
         return None
 
     def upload_to_node(self, node, content=None):
-        # TODO: access dropbox to upload block(nodeid).oram
-        # TODO: need to include override rights
-        # TODO: if content is none create random content
-        pass
+        if content is None:
+            content = self.create_dummy_data()
+        self.dbx.files_upload(content, self.create_path_name(node), mode=dropbox.files.WriteMode.overwrite)
 
     def create_path_name(self, node):
         return '/' + FILE_NAME % node

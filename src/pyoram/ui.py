@@ -10,13 +10,17 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.treeview import TreeViewLabel
 
 from pyoram import utils, controller
-from pyoram.exceptions import WrongPassword, NoSelectedNode
+from pyoram.exceptions import WrongPassword, NoSelectedNode, DownloadFileError, FileSizeError
 
 AES_CRYPTO = None
 
 
-def open_popup(title, err):
-    popup = Popup(title=title, content=Label(text=err.__str__()),
+def open_popup_error(title, err):
+    open_popup(title, err.__str__())
+
+
+def open_popup(title, status):
+    popup = Popup(title=title, content=Label(text=status),
                   size_hint=(None, None), size=(200, 200))
     popup.open()
 
@@ -47,7 +51,7 @@ class LoginScreen(Screen):
             AES_CRYPTO = controller.verify_pw(pw)
             self.manager.current = 'main'
         except WrongPassword as err:
-            open_popup('Wrong password', err)
+            open_popup_error('Wrong password', err)
 
 
 class LoadDialog(FloatLayout):
@@ -88,6 +92,7 @@ class MainScreen(Screen):
     def split_input_file_task(self):
         controller.save_file_input(self.filename, self.file_input, AES_CRYPTO)
         self.file_view.add_node(TreeViewLabel(text=self.filename))
+        controller.update_data(AES_CRYPTO)
         self.stop.set()
 
     def upload_file(self, path, filename):
@@ -108,7 +113,7 @@ class MainScreen(Screen):
         try:
             self.selected_node_text = self.get_selected_node().text
         except NoSelectedNode as err:
-            open_popup('Download error', err)
+            open_popup_error('Download error', err)
             return
         # TODO: add selected_node_text to the savedialog
         content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
@@ -117,8 +122,12 @@ class MainScreen(Screen):
         self._popup.open()
 
     def download_file_task(self):
-        controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
-        # TODO: inform user about download status (successfull or not)
+        try:
+            controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
+            open_popup('Download was successful', 'File was downloaded to \n' % os.path.join(self.path, self.filename))
+        except (DownloadFileError, FileSizeError) as err:
+            open_popup_error('Download error', err)
+            return
         self.stop.set()
 
     def save(self, path, filename):
@@ -136,7 +145,7 @@ class MainScreen(Screen):
             self.selected_node = self.get_selected_node()
             self.selected_node_text = self.selected_node.text
         except NoSelectedNode as err:
-            open_popup('Delete error', err)
+            open_popup_error('Delete error', err)
             return
         self.file_view.remove_node(self.selected_node)
         threading.Thread(target=self.delete_file_task).start()

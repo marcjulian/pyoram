@@ -4,6 +4,7 @@ WRITE_MODE = 'w'
 READ_MODE = 'r'
 READ_WRITE_MODE = 'r+'
 READ_BINARY_MODE = 'rb'
+WRITE_BINARY_MODE = 'wb'
 
 KEY_MAP_FILE_NAME = 'key.map'
 FILE_MAP_FILE_NAME = 'file.map'

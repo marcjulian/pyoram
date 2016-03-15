@@ -20,7 +20,7 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 ### Authentication
 
-- HMAC(265-bit key length) using SHA256
+- HMAC(256-bit key length) using SHA256
 
 ## Dependencies
 - crypthography

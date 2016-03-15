@@ -20,3 +20,15 @@ class NoSelectedNode(Exception):
     def __init__(self, message, reason=None):
         super(NoSelectedNode, self).__init__(message)
         self._reason = reason
+
+
+class DownloadFileError(Exception):
+    def __init__(self, message, reason=None):
+        super(DownloadFileError, self).__init__(message)
+        self._reason = reason
+
+
+class FileSizeError(Exception):
+    def __init__(self, message, reason=None):
+        super(FileSizeError, self).__init__(message)
+        self._reason = reason

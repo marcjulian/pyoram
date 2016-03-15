@@ -18,9 +18,13 @@ def is_file_in_stash(filename):
     return os.path.isfile(os.path.join(stash_dir, filename))
 
 
-def delete_file__in_stash(filename):
+def delete_file_in_stash(filename):
     if os.path.isfile(os.path.join(stash_dir, filename)):
         os.remove(os.path.join(stash_dir, filename))
+
+
+def get_file_names_from_stash():
+    return os.listdir(stash_dir)
 
 
 def file_exists(filename):

@@ -1,15 +1,15 @@
 import logging
 
-from pyoram import utils
 from pyoram.core import config
 from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.stash import Stash
+from pyoram.exceptions import FileSizeError
 
 
 # TODO: calculate the block size for splitting the file, because the encryption makes the length bigger
 # (also consider the dataID +  b"\x80")
 class ChunkFile:
-    def __init__(self, aes_crypto):
+    def __init__(self, aes_crypto=None):
         self.aes_crypto = aes_crypto
         self.data_id_counter = FileMap().get_id_counter()
 
@@ -27,19 +27,18 @@ class ChunkFile:
                 logging.info('chunk is smaller than the block size, add padding here')
             token = self.aes_crypto.encrypt(chunk, data_id)
             main_part = token[0]
-            Stash().add_file(data_id, utils.byte_to_str(main_part))
+            Stash().add_file(data_id, main_part)
             iv = token[1]
             hmac = token[2]
-            PositionMap().add_data(data_id, utils.byte_to_str(iv), utils.byte_to_str(hmac))
+            PositionMap().add_data(data_id, iv, hmac)
         FileMap().add_file(file_name, len(file_input), data_items, self.data_id_counter)
 
-    def combine(self, data_items):
-        # TODO: check why are more in the downloaded file (should a HMAC for the whole file be added?)
+    def combine(self, data_items, expected_file_len):
         plaintext = bytearray()
         for data_item in data_items:
-            data_id = data_item[0]
-            chunk = data_item[1]
-            iv, hmac = PositionMap().get_iv_and_hmac(data_id)
-            plaintext_chunk = self.aes_crypto.decrypt(chunk.encode(), iv, hmac)
-            plaintext.extend(plaintext_chunk)
-        return utils.byte_to_str(plaintext)
+            plaintext.extend(data_item[1])
+
+        if expected_file_len != len(plaintext):
+            raise FileSizeError('File size of the downloaded file is not correct.')
+
+        return plaintext
