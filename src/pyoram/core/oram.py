@@ -63,6 +63,10 @@ class PathORAM:
             downloaded_data_items = self.read_path(path_to_root)
             data_item = self.write_stash(downloaded_data_items, data_id)
             self.write_path(path_to_root)
+        else:
+            # decrypt data item, if found in the stash
+            data_id = data_item[0]
+            data_item = data_id, self.decrypt_data_item(data_id, data_item[1])
         return data_item
 
     def read_path(self, path_to_root):
@@ -98,13 +102,16 @@ class PathORAM:
                 logging.info('[WRITE PATH] upload to node %d dummy data' % node)
                 self.write_node(node)
 
+    def decrypt_data_item(self, data_id, data_item):
+        iv, hmac = PositionMap().get_iv_and_hmac(data_id)
+        return self.aes_crypto.decrypt(data_item, iv, hmac)
+
     def write_stash(self, downloaded_data_items, data_id_of_interest=None):
         data_item_of_interest = None
         for downloaded_data_item in downloaded_data_items:
             data_id = downloaded_data_item[0]
             data_item = downloaded_data_item[1]
-            iv, hmac = PositionMap().get_iv_and_hmac(data_id)
-            plaintext = self.aes_crypto.decrypt(data_item, iv, hmac)
+            plaintext = self.decrypt_data_item(data_id, data_item)
             token = self.aes_crypto.encrypt(plaintext, data_id)
             ciphertext = token[0]
             Stash().add_file(data_id, ciphertext)

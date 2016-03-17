@@ -36,6 +36,7 @@ class ChunkFile:
     def combine(self, data_items, expected_file_len):
         plaintext = bytearray()
         for data_item in data_items:
+            logging.info('[CHUNK FILE] combining data item with id %d' % data_item[0])
             plaintext.extend(data_item[1])
 
         if expected_file_len != len(plaintext):

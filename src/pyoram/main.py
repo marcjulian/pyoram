@@ -6,6 +6,7 @@ import data
 from pyoram import utils
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.ui import SignupScreen, LoginScreen, MainScreen
+
 Config.set('graphics', 'width', '500')
 Config.set('graphics', 'height', '300')
 

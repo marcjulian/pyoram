@@ -1,13 +1,13 @@
-import os
 import logging
+import os
 
+from pyoram import utils
 from pyoram.core.chunk_file import ChunkFile
 from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.oram import PathORAM
 from pyoram.core.stash import Stash
 from pyoram.crypto.aes_crypto import AESCrypto
 from pyoram.crypto.keyfile import KeyFile
-from pyoram import utils
 from pyoram.exceptions import DownloadFileError
 
 
@@ -34,11 +34,13 @@ def get_uploaded_file_names():
 
 
 def save_file_input(filename, file_input, aes_crypto):
+    logging.info('Start upload of file %s', filename)
     ChunkFile(aes_crypto).split(filename, file_input)
 
 
 def update_data(aes_crypto):
     PathORAM(aes_crypto).update_data()
+    logging.info('End upload of file')
 
 
 def delete_selected_node(filename):

@@ -30,7 +30,7 @@ class Stash:
 
     def get_data_item(self, data_id):
         if data.is_file_in_stash(self.get_filename(data_id)):
-            with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_MODE) as data_item:
+            with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_BINARY_MODE) as data_item:
                 return data_id, data_item.read()
 
     def get_potential_data_id(self):

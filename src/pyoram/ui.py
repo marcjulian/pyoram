@@ -115,8 +115,8 @@ class MainScreen(Screen):
         except NoSelectedNode as err:
             open_popup_error('Download error', err)
             return
-        # TODO: add selected_node_text to the savedialog
         content = SaveDialog(save=self.save, cancel=self.dismiss_popup)
+        content.file_name_label.text = self.selected_node_text
         self._popup = Popup(title="Download file", content=content,
                             size_hint=(0.9, 0.9))
         self._popup.open()
@@ -124,7 +124,7 @@ class MainScreen(Screen):
     def download_file_task(self):
         try:
             controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
-            open_popup('Download was successful', 'File was downloaded to \n' % os.path.join(self.path, self.filename))
+            open_popup('Download file', 'Download was successful')
         except (DownloadFileError, FileSizeError) as err:
             open_popup_error('Download error', err)
             return

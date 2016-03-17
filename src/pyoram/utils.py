@@ -19,8 +19,6 @@ def str_to_byte(att):
 
 
 def byte_to_str(att):
-    # TODO: check decode for images and files
-    # TODO: image start with 0x89 can not be decoded with utf-8
     return att.decode()
 
 
