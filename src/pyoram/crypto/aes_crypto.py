@@ -1,5 +1,4 @@
 import base64
-import binascii
 import os
 import struct
 
@@ -14,15 +13,11 @@ from cryptography.hazmat.primitives.keywrap import aes_key_wrap, aes_key_unwrap,
 
 from pyoram.core import config
 from pyoram.crypto.keyfile import KeyFile
-from pyoram.exceptions import WrongPassword
+from pyoram.exceptions import WrongPassword, DummyFileFound
 
 
 class InvalidToken(Exception):
     # TODO: catch InvalidToken for the user to inform about the error, maybe add a text for the different invalidtokens
-    pass
-
-
-class InvalidDataId(Exception):
     pass
 
 
@@ -104,45 +99,43 @@ class AESCrypto(object):
         if not isinstance(data_id, int):
             raise TypeError("data_id must be int.")
 
+        main_parts = (
+            struct.pack(config.FORMAT_CHAR, data_id) + data
+        )
+
         # PKCS7 padding
         padder = padding.PKCS7(algorithms.AES.block_size).padder()
-        padded_data = padder.update(data) + padder.finalize()
+        padded_data = padder.update(main_parts) + padder.finalize()
         # AES with CBC mode
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
-        # TODO: don't store any information not encrypted on the server (=> data_id)
-        main_parts = (
-            b"\x80" + ciphertext + struct.pack(config.FORMAT_CHAR, data_id)
+        basic_parts = (
+            b"\x80" + iv + ciphertext
         )
 
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
-        h.update(main_parts)
+        h.update(basic_parts)
         hmac = h.finalize()
-        return self.to_base64(main_parts), self.to_base64(iv), self.to_base64(hmac)
+        return basic_parts + hmac
 
-    def decrypt(self, token, iv, hmac):
+    def decrypt(self, token):
         if not isinstance(token, bytes):
             raise TypeError("token must be bytes")
 
-        try:
-            data = self.from_base64(token)
-            iv = self.from_base64(iv)
-            hmac = self.from_base64(hmac)
-        except (TypeError, binascii.Error):
+        if not token or six.indexbytes(token, 0) != 0x80:
             raise InvalidToken
 
-        if not data or six.indexbytes(data, 0) != 0x80:
-            raise InvalidToken
-
+        hmac = token[-32:]
         h = HMAC(self.mac_key, hashes.SHA256(), backend=self.backend)
-        h.update(data)
+        h.update(token[:-32])
         try:
             h.verify(hmac)
         except InvalidSignature:
             raise InvalidToken
 
-        ciphertext = data[1:-8]
+        iv = token[1:17]
+        ciphertext = token[17:-32]
         decryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), self.backend).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:
@@ -156,21 +149,14 @@ class AESCrypto(object):
             plaintext += unpadder.finalize()
         except ValueError:
             raise InvalidToken
-        return plaintext
-
-    @classmethod
-    def retrieve_data_id(cls, token):
-        try:
-            data = cls.from_base64(token)
-        except (TypeError, binascii.Error):
-            raise InvalidToken
 
         try:
-            data_id, = struct.unpack(config.FORMAT_CHAR, data[-8:])
+            data_id, = struct.unpack(config.FORMAT_CHAR, plaintext[:8])
         except struct.error:
             raise InvalidToken
 
-        if data_id in config.get_dummy_id_range():
-            raise InvalidDataId
+        if data_id == config.DUMMY_ID:
+            raise DummyFileFound
 
-        return data_id
+        data = plaintext[8:]
+        return data_id, data

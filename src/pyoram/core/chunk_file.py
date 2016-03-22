@@ -15,23 +15,23 @@ class ChunkFile:
 
     def split(self, file_name, file_input):
         logging.info('length of the selected file %d ' % len(file_input))
-        data_items = []
+        data_ids = []
         for x in range(0, len(file_input), config.BLOCK_SIZE):
-            # TODO: don't use dummy data id range
+            if self.data_id_counter == config.DUMMY_ID:
+                self.data_id_counter += 1
             data_id = self.data_id_counter
             self.data_id_counter += 1
-            data_items.append(data_id)
+            data_ids.append(data_id)
             chunk = file_input[x:config.BLOCK_SIZE + x]
+            logging.info('[CHUNK FILE] chunk size is %d after splitting' % len(chunk))
             if len(chunk) != config.BLOCK_SIZE:
                 # TODO: padding of the last block if it doesn't fit the block size?
-                logging.info('chunk is smaller than the block size, add padding here')
+                logging.info('[CHUNK FILE] chunk is smaller than the block size, add padding here')
             token = self.aes_crypto.encrypt(chunk, data_id)
-            main_part = token[0]
-            Stash().add_file(data_id, main_part)
-            iv = token[1]
-            hmac = token[2]
-            PositionMap().add_data(data_id, iv, hmac)
-        FileMap().add_file(file_name, len(file_input), data_items, self.data_id_counter)
+            logging.info('[CHUNK FILE] chunk size is %d after encryption' % len(token))
+            Stash().add_file(data_id, token)
+            PositionMap().add_data(data_id)
+        FileMap().add_file(file_name, len(file_input), data_ids, self.data_id_counter)
 
     def combine(self, data_items, expected_file_len):
         plaintext = bytearray()

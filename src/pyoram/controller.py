@@ -21,8 +21,8 @@ def verify_pw(pw):
     return AESCrypto(key_file, pw)
 
 
-def setup_cloud():
-    PathORAM().setup_cloud()
+def setup_cloud(aes_crypto):
+    PathORAM(aes_crypto).setup_cloud()
 
 
 def setup_stash():
@@ -38,8 +38,10 @@ def save_file_input(filename, file_input, aes_crypto):
     ChunkFile(aes_crypto).split(filename, file_input)
 
 
-def update_data(aes_crypto):
-    PathORAM(aes_crypto).update_data()
+def update_data(filename, aes_crypto):
+    data_ids = FileMap().get_data_ids_of_file(filename)
+    data_properties = PositionMap().get_leaf_ids(data_ids)
+    PathORAM(aes_crypto).update_data(data_properties)
     logging.info('End upload of file')
 
 

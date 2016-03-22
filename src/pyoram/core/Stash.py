@@ -4,6 +4,7 @@ from pyoram import utils
 FILE_NAME = 'data%d.oram'
 
 
+# TODO: check usage of blocks in the stash
 class Stash:
     def __init__(self):
         if not data.is_folder(utils.STASH_FOLDER_NAME):
@@ -13,11 +14,11 @@ class Stash:
         return FILE_NAME % data_id
 
     def add_file(self, data_id, main_part):
-        with data.open_data_file_in_stash(self.get_filename(data_id), utils.WRITE_MODE) as data_item:
-            data_item.write(utils.byte_to_str(main_part))
+        with data.open_data_file_in_stash(self.get_filename(data_id), utils.WRITE_BINARY_MODE) as data_item:
+            data_item.write(main_part)
 
     def open_file(self, data_id):
-        with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_MODE) as data_item:
+        with data.open_data_file_in_stash(self.get_filename(data_id), utils.READ_BINARY_MODE) as data_item:
             data_block = data_item.read()
             return data_block
 

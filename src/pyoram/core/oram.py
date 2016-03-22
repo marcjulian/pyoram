@@ -1,16 +1,16 @@
 import logging
 import math
 
+from pyoram.exceptions import DummyFileFound
 from pyoram.core import config
 from pyoram.core.cloud import Cloud
 from pyoram.core.map import PositionMap
 from pyoram.core.stash import Stash
-from pyoram.crypto.aes_crypto import AESCrypto, InvalidDataId
 
 
 class PathORAM:
-    def __init__(self, aes_crypto=None):
-        self.cloud = Cloud()
+    def __init__(self, aes_crypto):
+        self.cloud = Cloud(aes_crypto)
         self.aes_crypto = aes_crypto
 
     @classmethod
@@ -52,35 +52,22 @@ class PathORAM:
         potential_data_properties = PositionMap().get_leaf_ids(potential_data_ids)
         return potential_data_properties
 
-    def access_oram(self, path_to_root):
+    def access_oram(self, path_to_root, data_id_of_interest=None):
+        # TODO: start timer
+        # TODO: lock the function to be used only in one thread at the time
         downloaded_data_items = self.read_path(path_to_root)
-        self.write_stash(downloaded_data_items)
+        data_item = self.write_stash(downloaded_data_items, data_id_of_interest)
         self.write_path(path_to_root)
-
-    def access_oram_with_stash(self, path_to_root, data_id):
-        data_item = Stash().get_data_item(data_id)
-        if not data_item:
-            downloaded_data_items = self.read_path(path_to_root)
-            data_item = self.write_stash(downloaded_data_items, data_id)
-            self.write_path(path_to_root)
-        else:
-            # decrypt data item, if found in the stash
-            data_id = data_item[0]
-            data_item = data_id, self.decrypt_data_item(data_id, data_item[1])
+        # TODO: end timer
+        # TODO: statistics stash size
         return data_item
 
     def read_path(self, path_to_root):
         data_items = []
         for node in path_to_root:
             data_item = self.read_node(node)
-            try:
-                data_id = AESCrypto.retrieve_data_id(data_item)
-                data_items.append((data_id, data_item))
-                logging.info('[READ_PATH] download from node %d found data item with id %d' % (node, data_id))
-            except InvalidDataId:
-                # dummy data found
-                logging.info('[READ_PATH] download from node %d found dummy data' % node)
-                pass
+            logging.info('[READ PATH] download from node %d' % node)
+            data_items.append(data_item)
         return data_items
 
     def write_path(self, path_to_root):
@@ -88,40 +75,41 @@ class PathORAM:
             potential_data_properties = self.get_potential_data_ids_with_leaf()
             has_potential_item = False
             for potential_data_property in potential_data_properties:
-                leaf_id = potential_data_property[1]
-                potential_path = self.path_to_root(leaf_id)
+                potential_leaf_id = abs(potential_data_property[1])
+                potential_path = self.path_to_root(potential_leaf_id)
                 if node in potential_path:
                     has_potential_item = True
                     data_id = potential_data_property[0]
                     data_item = Stash().get_data_item(data_id)
                     logging.info('[WRITE PATH] upload to node %d data item with id %d' % (node, data_id))
                     self.write_node(node, data_item[1])
+                    PositionMap().update_leaf_id(data_id, True)
                     Stash().delete_data_item(data_id)
                     break
             if not has_potential_item:
                 logging.info('[WRITE PATH] upload to node %d dummy data' % node)
                 self.write_node(node)
 
-    def decrypt_data_item(self, data_id, data_item):
-        iv, hmac = PositionMap().get_iv_and_hmac(data_id)
-        return self.aes_crypto.decrypt(data_item, iv, hmac)
+    def decrypt_data_item(self, data_item):
+        return self.aes_crypto.decrypt(data_item)
 
     def write_stash(self, downloaded_data_items, data_id_of_interest=None):
         data_item_of_interest = None
         for downloaded_data_item in downloaded_data_items:
-            data_id = downloaded_data_item[0]
-            data_item = downloaded_data_item[1]
-            plaintext = self.decrypt_data_item(data_id, data_item)
-            token = self.aes_crypto.encrypt(plaintext, data_id)
-            ciphertext = token[0]
-            Stash().add_file(data_id, ciphertext)
-            new_iv = token[1]
-            new_hmac = token[2]
-            if data_id_of_interest is not None and data_id_of_interest == data_id:
-                PositionMap().update_data(data_id, new_iv, new_hmac, True)
-                data_item_of_interest = data_id, plaintext
-            else:
-                PositionMap().update_data(data_id, new_iv, new_hmac)
+            try:
+                data_id, plaintext = self.decrypt_data_item(downloaded_data_item)
+                # TODO: if data id is not in the position map, skip the data item
+                logging.info('[WRITE STASH] downloaded data item with id %d' % data_id)
+                token = self.aes_crypto.encrypt(plaintext, data_id)
+                Stash().add_file(data_id, token)
+                if data_id_of_interest is not None and data_id_of_interest == data_id:
+                    PositionMap().choose_new_leaf_id(data_id)
+                    data_item_of_interest = data_id, plaintext
+                else:
+                    PositionMap().update_leaf_id(data_id, False)
+            except DummyFileFound:
+                logging.info('[WRITE STASH] downloaded dummy file')
+                pass
         return data_item_of_interest
 
     def read_node(self, node):
@@ -135,13 +123,20 @@ class PathORAM:
         for data_property in data_properties:
             data_id = data_property[0]
             leaf_id = data_property[1]
-            path_to_root = self.path_to_root(leaf_id)
-            data_item = self.access_oram_with_stash(path_to_root, data_id)
-            data_items.append(data_item)
+            if leaf_id < 0:
+                data_item = Stash().get_data_item(data_id)
+                logging.info('[PATH ORAM] access stash')
+                # decrypt data item
+                data_item = self.decrypt_data_item(data_item[1])
+                data_items.append(data_item)
+            else:
+                path_to_root = self.path_to_root(leaf_id)
+                data_item = self.access_oram(path_to_root, data_id)
+                data_items.append(data_item)
         return data_items
 
-    def update_data(self):
-        # TODO: should only called for the first upload of a file, huge overhead otherwise
-        for leaf in range(config.LEAF_MIN, config.LEAF_MAX + 1):
-            path_to_root = self.path_to_root(leaf)
+    def update_data(self, data_properties):
+        for data_property in data_properties:
+            leaf_id = abs(data_property[1])
+            path_to_root = self.path_to_root(leaf_id)
             self.access_oram(path_to_root)

@@ -32,3 +32,7 @@ class FileSizeError(Exception):
     def __init__(self, message, reason=None):
         super(FileSizeError, self).__init__(message)
         self._reason = reason
+
+
+class DummyFileFound(Exception):
+    pass

@@ -14,8 +14,6 @@ JSON_DATA_ITEMS = 'data_items'
 # position.map
 JSON_LEAF_ID = 'leaf_id'
 JSON_DATA_ID = 'data_id'
-JSON_IV = 'iv'
-JSON_HMAC = 'hmac'
 
 
 class FileMap:
@@ -81,26 +79,11 @@ class PositionMap:
             with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.WRITE_MODE) as position_map:
                 json.dump((), position_map, indent=2)
 
-    def add_data(self, data_id, iv, hmac):
+    def add_data(self, data_id):
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
-            position_data.append(
-                {JSON_LEAF_ID: config.get_random_leaf_id(), JSON_DATA_ID: data_id, JSON_IV: utils.byte_to_str(iv),
-                 JSON_HMAC: utils.byte_to_str(hmac)})
-            position_map.seek(0)
-            json.dump(position_data, position_map, indent=2, sort_keys=True)
-            position_map.truncate()
-
-    def update_data(self, data_id, new_iv, new_hmac, new_leaf_id=False):
-        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
-            position_data = json.load(position_map)
-            for entry in position_data:
-                if entry[JSON_DATA_ID] == data_id:
-                    entry[JSON_IV] = utils.byte_to_str(new_iv)
-                    entry[JSON_HMAC] = utils.byte_to_str(new_hmac)
-                    if new_leaf_id:
-                        entry[JSON_LEAF_ID] = config.get_random_leaf_id()
-                    break
+            # TODO: make leaf id negative and ad a function to change the leaf id to positive when uploaded to the cloud
+            position_data.append({JSON_LEAF_ID: -config.get_random_leaf_id(), JSON_DATA_ID: data_id})
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
             position_map.truncate()
@@ -134,9 +117,27 @@ class PositionMap:
                         break
             return leaf_ids
 
-    def get_iv_and_hmac(self, data_id):
-        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+    def update_leaf_id(self, data_id, is_in_cloud):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
             for entry in position_data:
                 if entry[JSON_DATA_ID] == data_id:
-                    return entry[JSON_IV], entry[JSON_HMAC]
+                    if is_in_cloud:
+                        entry[JSON_LEAF_ID] = abs(entry[JSON_LEAF_ID])
+                    else:
+                        entry[JSON_LEAF_ID] = -entry[JSON_LEAF_ID]
+                    break
+            position_map.seek(0)
+            json.dump(position_data, position_map, indent=2, sort_keys=True)
+            position_map.truncate()
+
+    def choose_new_leaf_id(self, data_id):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] == data_id:
+                    entry[JSON_LEAF_ID] = -config.get_random_leaf_id()
+                    break
+            position_map.seek(0)
+            json.dump(position_data, position_map, indent=2, sort_keys=True)
+            position_map.truncate()

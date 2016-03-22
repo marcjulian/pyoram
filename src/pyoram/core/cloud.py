@@ -22,11 +22,12 @@ RESPONSE_CODE_OK = 200
 
 
 class Cloud:
-    def __init__(self):
+    def __init__(self, aes_crypto):
         if not data.file_exists(utils.CLOUD_MAP_FILE_NAME):
             logging.info('Create cloud map')
             self.create_cloud_map()
         cloud_map = self.load_cloud_map()
+        self.aes_crypto = aes_crypto
         self.token = cloud_map[0]
         self.cloud_init = cloud_map[1]
         self.dbx = dropbox.Dropbox(self.token)
@@ -52,27 +53,22 @@ class Cloud:
             json.dump(cloud_data, cloud_map, indent=2)
             cloud_map.truncate()
 
-    @classmethod
-    def get_random_byte_len(cls):
-        return int(RANDOM_BYTE_FACTOR * config.BLOCK_SIZE)
-
     def setup_cloud(self, max_block_size):
         if not self.cloud_init:
             logging.info('Cloud is not initialized')
             logging.info('start setup of the cloud')
             for block in range(0, max_block_size):
                 logging.info('upload file %d' % block)
-                self.dbx.files_upload(self.create_dummy_data(), self.create_path_name(block))
+                self.dbx.files_upload(self.create_dummy_data(), self.create_path_name(block),
+                                      mode=dropbox.files.WriteMode.overwrite)
             logging.info('end setup of the cloud')
             self.cloud_init = True
             self.update_cloud_map()
 
     def create_dummy_data(self):
-        dummy_id = random.randrange(config.DUMMY_ID_START, config.DUMMY_ID_STOP)
-        dummy_data = (
-            os.urandom(self.get_random_byte_len()) + struct.pack(config.FORMAT_CHAR, dummy_id)
-        )
-        return base64.urlsafe_b64encode(dummy_data).decode()
+        dummy_id = config.DUMMY_ID
+        dummy_data = os.urandom(config.BLOCK_SIZE)
+        return self.aes_crypto.encrypt(dummy_data, dummy_id)
 
     def download_node(self, node):
         # response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response

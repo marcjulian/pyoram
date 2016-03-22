@@ -70,7 +70,7 @@ class MainScreen(Screen):
     stop = threading.Event()
 
     def setup_cloud_task(self):
-        controller.setup_cloud()
+        controller.setup_cloud(AES_CRYPTO)
         self.stop.set()
 
     def on_pre_enter(self, *args):
@@ -92,7 +92,7 @@ class MainScreen(Screen):
     def split_input_file_task(self):
         controller.save_file_input(self.filename, self.file_input, AES_CRYPTO)
         self.file_view.add_node(TreeViewLabel(text=self.filename))
-        controller.update_data(AES_CRYPTO)
+        controller.update_data(self.filename, AES_CRYPTO)
         self.stop.set()
 
     def upload_file(self, path, filename):
