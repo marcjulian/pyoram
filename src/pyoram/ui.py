@@ -21,7 +21,7 @@ def open_popup_error(title, err):
 
 def open_popup(title, status):
     popup = Popup(title=title, content=Label(text=status),
-                  size_hint=(None, None), size=(200, 200))
+                  size_hint=(None, None), size=(300, 200))
     popup.open()
 
 
@@ -33,13 +33,9 @@ class SignupScreen(Screen):
             controller.create_keys(pw)
             self.manager.current = 'login'
         elif not pw and not repw:
-            popup = Popup(title='Empty password', content=Label(text='Password cannot be empty'),
-                          size_hint=(None, None), size=(200, 200))
-            popup.open()
+            open_popup('Empty password', 'Password cannot be empty')
         else:
-            popup = Popup(title='Re-enter passwords', content=Label(text='Passwords do not match'),
-                          size_hint=(None, None), size=(200, 200))
-            popup.open()
+            open_popup('Re-enter passwords', 'Passwords do not match')
 
 
 class LoginScreen(Screen):
@@ -81,6 +77,10 @@ class MainScreen(Screen):
         for file_name in file_names:
             self.file_view.add_node(TreeViewLabel(text=file_name))
 
+        self.max_storage_size = controller.get_max_storage_size()
+        self.usage_bar.max = self.max_storage_size
+        self.update_storage_view()
+
     def dismiss_popup(self):
         self._popup.dismiss()
 
@@ -89,9 +89,19 @@ class MainScreen(Screen):
         self._popup = Popup(title="Upload file", content=content, size_hint=(0.9, 0.9))
         self._popup.open()
 
+    def update_storage_view(self):
+        # TODO: describe the storage in mb or gb
+        self.used_storage_size = controller.get_used_storage_size()
+        self.usage_label.text = '%d used of %d' % (self.used_storage_size, self.max_storage_size)
+        self.usage_bar.value = self.used_storage_size
+
+    def get_free_storage_size(self):
+        return self.max_storage_size - self.used_storage_size
+
     def split_input_file_task(self):
         controller.save_file_input(self.filename, self.file_input, AES_CRYPTO)
         self.file_view.add_node(TreeViewLabel(text=self.filename))
+        self.update_storage_view()
         controller.update_data(self.filename, AES_CRYPTO)
         self.stop.set()
 
@@ -99,9 +109,13 @@ class MainScreen(Screen):
         with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
             self.file_input = file.read()
 
-        self.filename = os.path.basename(filename[0])
-        threading.Thread(target=self.split_input_file_task).start()
-        self.dismiss_popup()
+        if controller.is_storage_available(len(self.file_input), self.get_free_storage_size()):
+            self.filename = os.path.basename(filename[0])
+            threading.Thread(target=self.split_input_file_task).start()
+            self.dismiss_popup()
+        else:
+            self.dismiss_popup()
+            open_popup('Upload Error', 'Not enough storage available.')
 
     def get_selected_node(self):
         selected_node = self.file_view.selected_node

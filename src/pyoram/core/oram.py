@@ -98,15 +98,15 @@ class PathORAM:
         for downloaded_data_item in downloaded_data_items:
             try:
                 data_id, plaintext = self.decrypt_data_item(downloaded_data_item)
-                # TODO: if data id is not in the position map, skip the data item
-                logging.info('[WRITE STASH] downloaded data item with id %d' % data_id)
-                token = self.aes_crypto.encrypt(plaintext, data_id)
-                Stash().add_file(data_id, token)
-                if data_id_of_interest is not None and data_id_of_interest == data_id:
-                    PositionMap().choose_new_leaf_id(data_id)
-                    data_item_of_interest = data_id, plaintext
-                else:
-                    PositionMap().update_leaf_id(data_id, False)
+                if PositionMap().data_id_exist(data_id):
+                    logging.info('[WRITE STASH] downloaded data item with id %d' % data_id)
+                    token = self.aes_crypto.encrypt(plaintext, data_id)
+                    Stash().add_file(data_id, token)
+                    if data_id_of_interest is not None and data_id_of_interest == data_id:
+                        PositionMap().choose_new_leaf_id(data_id)
+                        data_item_of_interest = data_id, plaintext
+                    else:
+                        PositionMap().update_leaf_id(data_id, False)
             except DummyFileFound:
                 logging.info('[WRITE STASH] downloaded dummy file')
                 pass
@@ -118,11 +118,10 @@ class PathORAM:
     def write_node(self, node, data_item=None):
         self.cloud.upload_to_node(node, data_item)
 
-    def download_data_items(self, data_properties):
+    def download_data_items(self, data_ids):
         data_items = []
-        for data_property in data_properties:
-            data_id = data_property[0]
-            leaf_id = data_property[1]
+        for data_id in data_ids:
+            leaf_id = PositionMap().get_leaf_id(data_id)
             if leaf_id < 0:
                 data_item = Stash().get_data_item(data_id)
                 logging.info('[PATH ORAM] access stash')

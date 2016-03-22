@@ -1,7 +1,9 @@
 import logging
 import os
+import math
 
 from pyoram import utils
+from pyoram.core.config import BLOCK_SIZE
 from pyoram.core.chunk_file import ChunkFile
 from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.oram import PathORAM
@@ -60,8 +62,7 @@ def save_file(combined_file, path, filename_to_save_to):
 def download_selected_file(selected_filename, path, filename_to_save_to, aes_crypto):
     logging.info('Start download of file %s', selected_filename)
     data_ids = FileMap().get_data_ids_of_file(selected_filename)
-    data_properties = PositionMap().get_leaf_ids(data_ids)
-    downloaded_data_items = PathORAM(aes_crypto).download_data_items(data_properties)
+    downloaded_data_items = PathORAM(aes_crypto).download_data_items(data_ids)
 
     if len(data_ids) != len(downloaded_data_items):
         raise DownloadFileError('An error occurred during file download')
@@ -69,3 +70,16 @@ def download_selected_file(selected_filename, path, filename_to_save_to, aes_cry
     combined_file = ChunkFile().combine(downloaded_data_items, FileMap().get_file_len(selected_filename))
     save_file(combined_file, path, filename_to_save_to)
     logging.info('End download of file %s', selected_filename)
+
+
+def get_max_storage_size():
+    return PathORAM.get_max_oram_storage_size()
+
+
+def get_used_storage_size():
+    number_data_ids = PositionMap().count_data_ids()
+    return number_data_ids * BLOCK_SIZE
+
+
+def is_storage_available(needed_storage_size, free_storage_size):
+    return math.ceil(needed_storage_size / BLOCK_SIZE) * BLOCK_SIZE <= free_storage_size

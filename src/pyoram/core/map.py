@@ -82,7 +82,6 @@ class PositionMap:
     def add_data(self, data_id):
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
-            # TODO: make leaf id negative and ad a function to change the leaf id to positive when uploaded to the cloud
             position_data.append({JSON_LEAF_ID: -config.get_random_leaf_id(), JSON_DATA_ID: data_id})
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
@@ -117,6 +116,13 @@ class PositionMap:
                         break
             return leaf_ids
 
+    def get_leaf_id(self, data_id):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] == data_id:
+                    return entry[JSON_LEAF_ID]
+
     def update_leaf_id(self, data_id, is_in_cloud):
         with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_WRITE_MODE) as position_map:
             position_data = json.load(position_map)
@@ -141,3 +147,16 @@ class PositionMap:
             position_map.seek(0)
             json.dump(position_data, position_map, indent=2, sort_keys=True)
             position_map.truncate()
+
+    def data_id_exist(self, data_id):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+            position_data = json.load(position_map)
+            for entry in position_data:
+                if entry[JSON_DATA_ID] == data_id:
+                    return True
+            return False
+
+    def count_data_ids(self):
+        with data.open_data_file(utils.POSITION_MAP_FILE_NAME, utils.READ_MODE) as position_map:
+            position_data = json.load(position_map)
+            return len(position_data)
