@@ -3,7 +3,7 @@ import os
 import math
 
 from pyoram import utils
-from pyoram.core.config import BLOCK_SIZE
+from pyoram.core import config
 from pyoram.core.chunk_file import ChunkFile
 from pyoram.core.map import FileMap, PositionMap
 from pyoram.core.oram import PathORAM
@@ -60,7 +60,7 @@ def save_file(combined_file, path, filename_to_save_to):
 
 
 def download_selected_file(selected_filename, path, filename_to_save_to, aes_crypto):
-    logging.info('Start download of file %s', selected_filename)
+    logging.info('Start download of file %s as %s' % (selected_filename, filename_to_save_to))
     data_ids = FileMap().get_data_ids_of_file(selected_filename)
     downloaded_data_items = PathORAM(aes_crypto).download_data_items(data_ids)
 
@@ -78,8 +78,17 @@ def get_max_storage_size():
 
 def get_used_storage_size():
     number_data_ids = PositionMap().count_data_ids()
-    return number_data_ids * BLOCK_SIZE
+    return number_data_ids * config.BLOCK_SIZE
 
 
 def is_storage_available(needed_storage_size, free_storage_size):
-    return math.ceil(needed_storage_size / BLOCK_SIZE) * BLOCK_SIZE <= free_storage_size
+    return math.ceil(needed_storage_size / config.BLOCK_SIZE) * config.BLOCK_SIZE <= free_storage_size
+
+
+def get_data_type_format(used_storage_size, max_storage_size):
+    data_type_used_name, data_type_used_value = config.get_format(used_storage_size)
+    data_type_max_name, data_type_max_value = config.get_format(max_storage_size)
+
+    return '%d %s used of %d %s' % (
+        used_storage_size / data_type_used_value, data_type_used_name, max_storage_size / data_type_max_value,
+        data_type_max_name)

@@ -55,10 +55,12 @@ class Cloud:
 
     def setup_cloud(self, max_block_size):
         if not self.cloud_init:
+            # TODO: delete all files, because the oram level can be smaller and hence less blocks are needed in the cloud
             logging.info('Cloud is not initialized')
             logging.info('start setup of the cloud')
             for block in range(0, max_block_size):
                 logging.info('upload file %d' % block)
+                # TODO: catch BadInputError and provide a popup to the user to add their token in cloud.map
                 self.dbx.files_upload(self.create_dummy_data(), self.create_path_name(block),
                                       mode=dropbox.files.WriteMode.overwrite)
             logging.info('end setup of the cloud')

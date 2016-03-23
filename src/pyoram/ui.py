@@ -90,9 +90,8 @@ class MainScreen(Screen):
         self._popup.open()
 
     def update_storage_view(self):
-        # TODO: describe the storage in mb or gb
         self.used_storage_size = controller.get_used_storage_size()
-        self.usage_label.text = '%d used of %d' % (self.used_storage_size, self.max_storage_size)
+        self.usage_label.text = controller.get_data_type_format(self.used_storage_size, self.max_storage_size)
         self.usage_bar.value = self.used_storage_size
 
     def get_free_storage_size(self):
@@ -152,6 +151,7 @@ class MainScreen(Screen):
 
     def delete_file_task(self):
         controller.delete_selected_node(self.selected_node_text)
+        self.update_storage_view()
         self.stop.set()
 
     def delete_selected_file(self):
