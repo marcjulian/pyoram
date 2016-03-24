@@ -1,16 +1,14 @@
-import base64
 import json
-import logging
 import os
-import random
-import struct
 
 import dropbox
 
 import data
-from pyoram import utils
+from pyoram import utils, log
 from pyoram.core import config
-from pyoram.exceptions import ErrorInCloudMap
+from pyoram.exceptions import ErrorInCloudMap, CloudTokenError
+
+logger = log.get_logger(__name__)
 
 JSON_TOKEN = 'token'
 JSON_INIT = 'init'
@@ -24,13 +22,13 @@ RESPONSE_CODE_OK = 200
 class Cloud:
     def __init__(self, aes_crypto):
         if not data.file_exists(utils.CLOUD_MAP_FILE_NAME):
-            logging.info('Create cloud map')
+            logger.info('Create cloud map')
             self.create_cloud_map()
         cloud_map = self.load_cloud_map()
         self.aes_crypto = aes_crypto
         self.token = cloud_map[0]
         self.cloud_init = cloud_map[1]
-        self.dbx = dropbox.Dropbox(self.token)
+        self.dbx = self.get_dropbox_access(self.token)
 
     def create_cloud_map(self):
         with data.open_data_file(utils.CLOUD_MAP_FILE_NAME, utils.WRITE_MODE) as cloud_map:
@@ -42,7 +40,7 @@ class Cloud:
                 cloud_data = json.load(cloud_map)
                 return cloud_data[JSON_TOKEN], cloud_data[JSON_INIT]
             except(ValueError, KeyError):
-                logging.warning('Error in cloud map.')
+                logger.warning('Error in cloud map.')
                 raise ErrorInCloudMap('Error in cloud map.')
 
     def update_cloud_map(self):
@@ -53,17 +51,41 @@ class Cloud:
             json.dump(cloud_data, cloud_map, indent=2)
             cloud_map.truncate()
 
+    def get_dropbox_access(self, dropbox_token):
+        """
+        Call Dropbox api
+        :param dropbox_token: to make api calls to dropbox
+        :return: dropbox instance
+        """
+        return dropbox.Dropbox(dropbox_token)
+
+    def file_upload(self, content, block):
+        """
+        Call Dropbox api
+        :param content: to be uploaded to dropbox
+        :param block: number to identify the name of the file
+        """
+        try:
+            self.dbx.files_upload(content, self.create_path_name(block), mode=dropbox.files.WriteMode.overwrite)
+        except dropbox.exceptions.BadInputError:
+            raise CloudTokenError('Please provide your token.')
+
+    def file_download(self, block):
+        """
+        Call Dropbox api
+        :param block: number to identify the name of the file
+        :return: response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response
+        """
+        return self.dbx.files_download(self.create_path_name(block))
+
     def setup_cloud(self, max_block_size):
         if not self.cloud_init:
             # TODO: delete all files, because the oram level can be smaller and hence less blocks are needed in the cloud
-            logging.info('Cloud is not initialized')
-            logging.info('start setup of the cloud')
+            logger.info('start setup of the cloud')
             for block in range(0, max_block_size):
-                logging.info('upload file %d' % block)
-                # TODO: catch BadInputError and provide a popup to the user to add their token in cloud.map
-                self.dbx.files_upload(self.create_dummy_data(), self.create_path_name(block),
-                                      mode=dropbox.files.WriteMode.overwrite)
-            logging.info('end setup of the cloud')
+                logger.info('upload file %d' % block)
+                self.file_upload(self.create_dummy_data(), block)
+            logger.info('end setup of the cloud')
             self.cloud_init = True
             self.update_cloud_map()
 
@@ -73,8 +95,7 @@ class Cloud:
         return self.aes_crypto.encrypt(dummy_data, dummy_id)
 
     def download_node(self, node):
-        # response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response
-        response_token = self.dbx.files_download(self.create_path_name(node))
+        response_token = self.file_download(node)
         # Response model carries the content
         response = response_token[1]
         if response.status_code == RESPONSE_CODE_OK:
@@ -84,7 +105,7 @@ class Cloud:
     def upload_to_node(self, node, content=None):
         if content is None:
             content = self.create_dummy_data()
-        self.dbx.files_upload(content, self.create_path_name(node), mode=dropbox.files.WriteMode.overwrite)
+        self.file_upload(content, node)
 
     def create_path_name(self, node):
         return '/' + FILE_NAME % node

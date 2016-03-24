@@ -17,7 +17,6 @@ from pyoram.exceptions import WrongPassword, DummyFileFound
 
 
 class InvalidToken(Exception):
-    # TODO: catch InvalidToken for the user to inform about the error, maybe add a text for the different invalidtokens
     pass
 
 
@@ -47,6 +46,21 @@ class AESCrypto(object):
             raise ValueError(
                 "Mac key must be 32 url-safe base64-encoded bytes."
             )
+
+    @classmethod
+    def add_padding(cls, plaintext, block_size):
+        padder = padding.PKCS7(block_size).padder()
+        return padder.update(plaintext) + padder.finalize()
+
+    @classmethod
+    def remove_padding(cls, plaintext_padded, block_size):
+        unpadder = padding.PKCS7(block_size).unpadder()
+        plaintext = unpadder.update(plaintext_padded)
+        try:
+            plaintext += unpadder.finalize()
+        except ValueError:
+            raise InvalidToken
+        return plaintext
 
     @classmethod
     def to_base64(cls, att):
@@ -104,8 +118,7 @@ class AESCrypto(object):
         )
 
         # PKCS7 padding
-        padder = padding.PKCS7(algorithms.AES.block_size).padder()
-        padded_data = padder.update(main_parts) + padder.finalize()
+        padded_data = self.add_padding(main_parts, algorithms.AES.block_size)
         # AES with CBC mode
         encryptor = Cipher(algorithms.AES(self.aes_key), modes.CBC(iv), backend=self.backend).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
@@ -143,12 +156,7 @@ class AESCrypto(object):
         except ValueError:
             raise InvalidToken
 
-        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
-        plaintext = unpadder.update(plaintext_padded)
-        try:
-            plaintext += unpadder.finalize()
-        except ValueError:
-            raise InvalidToken
+        plaintext = self.remove_padding(plaintext_padded, algorithms.AES.block_size)
 
         try:
             data_id, = struct.unpack(config.FORMAT_CHAR, plaintext[:8])

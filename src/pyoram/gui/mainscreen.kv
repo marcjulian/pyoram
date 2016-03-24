@@ -1,5 +1,5 @@
 <MainScreen>:
-    file_view: file_view
+    scroll_view: scroll_view
     usage_label: usage_label
     usage_bar: usage_bar
     BoxLayout:
@@ -17,9 +17,8 @@
                 text: 'Delete File'
                 on_release: root.delete_selected_file()
         BoxLayout:
-            TreeView:
-                hide_root: True
-                id: file_view
+            ScrollView:
+                id: scroll_view
         BoxLayout:
             size_hint_y: None
             height: 30

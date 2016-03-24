@@ -1,8 +1,7 @@
-import logging
 import os
 import math
 
-from pyoram import utils
+from pyoram import utils, log
 from pyoram.core import config
 from pyoram.core.chunk_file import ChunkFile
 from pyoram.core.map import FileMap, PositionMap
@@ -11,6 +10,8 @@ from pyoram.core.stash import Stash
 from pyoram.crypto.aes_crypto import AESCrypto
 from pyoram.crypto.keyfile import KeyFile
 from pyoram.exceptions import DownloadFileError
+
+logger = log.get_logger(__name__)
 
 
 def create_keys(pw):
@@ -36,7 +37,7 @@ def get_uploaded_file_names():
 
 
 def save_file_input(filename, file_input, aes_crypto):
-    logging.info('Start upload of file %s', filename)
+    logger.info('Start upload of file %s', filename)
     ChunkFile(aes_crypto).split(filename, file_input)
 
 
@@ -44,7 +45,7 @@ def update_data(filename, aes_crypto):
     data_ids = FileMap().get_data_ids_of_file(filename)
     data_properties = PositionMap().get_leaf_ids(data_ids)
     PathORAM(aes_crypto).update_data(data_properties)
-    logging.info('End upload of file')
+    logger.info('End upload of file')
 
 
 def delete_selected_node(filename):
@@ -60,7 +61,7 @@ def save_file(combined_file, path, filename_to_save_to):
 
 
 def download_selected_file(selected_filename, path, filename_to_save_to, aes_crypto):
-    logging.info('Start download of file %s as %s' % (selected_filename, filename_to_save_to))
+    logger.info('Start download of file %s as %s' % (selected_filename, filename_to_save_to))
     data_ids = FileMap().get_data_ids_of_file(selected_filename)
     downloaded_data_items = PathORAM(aes_crypto).download_data_items(data_ids)
 
@@ -69,7 +70,7 @@ def download_selected_file(selected_filename, path, filename_to_save_to, aes_cry
 
     combined_file = ChunkFile().combine(downloaded_data_items, FileMap().get_file_len(selected_filename))
     save_file(combined_file, path, filename_to_save_to)
-    logging.info('End download of file %s', selected_filename)
+    logger.info('End download of file %s', selected_filename)
 
 
 def get_max_storage_size():

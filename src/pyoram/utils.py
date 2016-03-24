@@ -13,6 +13,8 @@ STASH_FOLDER_NAME = 'stash'
 
 CLOUD_MAP_FILE_NAME = 'cloud.map'
 
+LOG_FILE_NAME = 'pyoram.log'
+
 
 def str_to_byte(att):
     return att.encode()
@@ -20,11 +22,3 @@ def str_to_byte(att):
 
 def byte_to_str(att):
     return att.decode()
-
-
-def to_base64(att):
-    return base64.urlsafe_b64encode(att)
-
-
-def from_base64(att):
-    return base64.urlsafe_b64decode(att)

@@ -37,3 +37,11 @@ def is_folder(folder_name):
 
 def create_folder(folder_name):
     os.makedirs(os.path.join(base_dir, folder_name))
+
+
+def get_stash_size():
+    return len([name for name in os.listdir(stash_dir) if os.path.isfile(os.path.join(stash_dir, name))])
+
+
+def get_log_file_name():
+    return os.path.join(base_dir, utils.LOG_FILE_NAME)

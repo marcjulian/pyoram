@@ -40,3 +40,6 @@ class Stash:
         for file_name in stash_file_names:
             data_ids.append(int(file_name[4:-5]))
         return data_ids
+
+    def get_stash_size(self):
+        return data.get_stash_size()

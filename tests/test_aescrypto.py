@@ -5,7 +5,6 @@ from pyoram.exceptions import WrongPassword
 
 
 class TestAESCrypto(TestCase):
-    # TODO: add test for dummy data
     def test_encrypt_decrypt(self):
         text = b"A very very secret message."
         password = 'Blubb1234'

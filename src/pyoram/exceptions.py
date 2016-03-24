@@ -34,5 +34,11 @@ class FileSizeError(Exception):
         self._reason = reason
 
 
+class CloudTokenError(Exception):
+    def __init__(self, message, reason=None):
+        super(CloudTokenError, self).__init__(message)
+        self._reason = reason
+
+
 class DummyFileFound(Exception):
     pass

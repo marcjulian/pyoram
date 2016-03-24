@@ -7,7 +7,7 @@ BLOCK_SIZE = 1000
 
 # The height of the binary tree (as integer)
 # TODO: use height of 5 to 10 for testing
-ORAM_LEVEL = 2
+ORAM_LEVEL = 5
 
 # The height of the binary tree (as integer)
 LEAF_MIN = int(math.pow(2, ORAM_LEVEL) - 1)

@@ -7,10 +7,10 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import Screen
-from kivy.uix.treeview import TreeViewLabel
+from kivy.uix.treeview import TreeViewLabel, TreeView
 
 from pyoram import utils, controller
-from pyoram.exceptions import WrongPassword, NoSelectedNode, DownloadFileError, FileSizeError
+from pyoram.exceptions import WrongPassword, NoSelectedNode, DownloadFileError, FileSizeError, CloudTokenError
 
 AES_CRYPTO = None
 
@@ -66,7 +66,10 @@ class MainScreen(Screen):
     stop = threading.Event()
 
     def setup_cloud_task(self):
-        controller.setup_cloud(AES_CRYPTO)
+        try:
+            controller.setup_cloud(AES_CRYPTO)
+        except CloudTokenError as err:
+            open_popup_error('Cloud Token', err)
         self.stop.set()
 
     def on_pre_enter(self, *args):
@@ -74,6 +77,10 @@ class MainScreen(Screen):
         # use thread for background task, use clock in a background task to access the ui
         threading.Thread(target=self.setup_cloud_task).start()
         file_names = controller.get_uploaded_file_names()
+        self.file_view = TreeView(hide_root=True, indent_level=4)
+        self.file_view.size_hint = 1, None
+        self.file_view.bind(minimum_height=self.file_view.setter('height'))
+        self.scroll_view.add_widget(self.file_view)
         for file_name in file_names:
             self.file_view.add_node(TreeViewLabel(text=file_name))
 
@@ -101,7 +108,10 @@ class MainScreen(Screen):
         controller.save_file_input(self.filename, self.file_input, AES_CRYPTO)
         self.file_view.add_node(TreeViewLabel(text=self.filename))
         self.update_storage_view()
-        controller.update_data(self.filename, AES_CRYPTO)
+        try:
+            controller.update_data(self.filename, AES_CRYPTO)
+        except CloudTokenError as err:
+            open_popup_error('Cloud Token', err)
         self.stop.set()
 
     def upload_file(self, path, filename):
@@ -138,7 +148,7 @@ class MainScreen(Screen):
         try:
             controller.download_selected_file(self.selected_node_text, self.path, self.filename, AES_CRYPTO)
             open_popup('Download file', 'Download was successful')
-        except (DownloadFileError, FileSizeError) as err:
+        except (DownloadFileError, FileSizeError, CloudTokenError) as err:
             open_popup_error('Download error', err)
             return
         self.stop.set()
