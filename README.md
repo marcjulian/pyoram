@@ -6,6 +6,7 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 * [Quick start](#quick-start)
 * [Features](#features)
+* [Screenshots](#screenshots)
 * [Under construction](#under-construction)
 * [Acknowledgements](#acknowledgements)
 * [Copyright and license](#copyright-and-license)
@@ -49,6 +50,9 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 
 - HMAC(256-bit key length) using SHA256
 
+## Screenshots
+
+
 ## Under construction
 
 PyORAM is currently under construction and further features will be added shortly.
@@ -58,6 +62,8 @@ For more information visit the kanban board at [Taiga.io](https://tree.taiga.io/
 
 The project is the main task of my internship at SIIT in the study program Business Information Systems (Bachelor of Science).
 Prof. Dr. Steve Gordon is the advisor, who helps defining the requirements for the project and assists me with any further questions.
+
+The final presentation of my internship is available on [prezi](https://prezi.com/4i5lkurr0bgh/pyoram/).
 
 ## Copyright and license
 
