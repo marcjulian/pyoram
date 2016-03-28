@@ -13,6 +13,7 @@ logger = log.get_logger(__name__)
 JSON_TOKEN = 'token'
 JSON_INIT = 'init'
 TOKEN_PLACEHOLDER = 'My token'
+FOLDER_NAME = 'data'
 FILE_NAME = 'block%d.oram'
 RANDOM_BYTE_FACTOR = 0.74
 
@@ -53,35 +54,59 @@ class Cloud:
 
     def get_dropbox_access(self, dropbox_token):
         """
-        Call Dropbox api
+        Call Dropbox api to gain access to the api
         :param dropbox_token: to make api calls to dropbox
         :return: dropbox instance
         """
         return dropbox.Dropbox(dropbox_token)
 
+    def create_folder(self):
+        """
+        Call Dropbox api to create a folder
+        """
+        self.dbx.files_create_folder(self.get_path_to_folder())
+
+    def delete_folder(self):
+        """
+        Call Dropbox api to delete a folder and the content
+        """
+        try:
+            self.dbx.files_delete(self.get_path_to_folder())
+            logger.info('delete cloud folder and all content')
+        except dropbox.exceptions.ApiError:
+            logger.info('cloud folder does not exist')
+            pass
+
     def file_upload(self, content, block):
         """
-        Call Dropbox api
+        Call Dropbox api to upload a file
         :param content: to be uploaded to dropbox
         :param block: number to identify the name of the file
         """
         try:
-            self.dbx.files_upload(content, self.create_path_name(block), mode=dropbox.files.WriteMode.overwrite)
+            self.dbx.files_upload(content, self.get_path_to_file(block), mode=dropbox.files.WriteMode.overwrite)
         except dropbox.exceptions.BadInputError:
             raise CloudTokenError('Please provide your token.')
 
     def file_download(self, block):
         """
-        Call Dropbox api
+        Call Dropbox api to download a file
         :param block: number to identify the name of the file
         :return: response token is a tuple of: dropbox.files.FileMetadata, requests.models.Response
         """
-        return self.dbx.files_download(self.create_path_name(block))
+        return self.dbx.files_download(self.get_path_to_file(block))
+
+    def get_path_to_folder(self):
+        return '/%s' % FOLDER_NAME
+
+    def get_path_to_file(self, node):
+        return self.get_path_to_folder() + '/' + FILE_NAME % node
 
     def setup_cloud(self, max_block_size):
         if not self.cloud_init:
-            # TODO: delete all files, because the oram level can be smaller and hence less blocks are needed in the cloud
-            logger.info('start setup of the cloud')
+            self.delete_folder()
+            self.create_folder()
+            logger.info('start setup of the cloud with a total of %d blocks' % max_block_size)
             for block in range(0, max_block_size):
                 logger.info('upload file %d' % block)
                 self.file_upload(self.create_dummy_data(), block)
@@ -106,6 +131,3 @@ class Cloud:
         if content is None:
             content = self.create_dummy_data()
         self.file_upload(content, node)
-
-    def create_path_name(self, node):
-        return '/' + FILE_NAME % node

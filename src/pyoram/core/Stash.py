@@ -4,7 +4,6 @@ from pyoram import utils
 FILE_NAME = 'data%d.oram'
 
 
-# TODO: check usage of blocks in the stash
 class Stash:
     def __init__(self):
         if not data.is_folder(utils.STASH_FOLDER_NAME):

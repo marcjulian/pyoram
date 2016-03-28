@@ -6,8 +6,7 @@ from enum import Enum
 BLOCK_SIZE = 1000
 
 # The height of the binary tree (as integer)
-# TODO: use height of 5 to 10 for testing
-ORAM_LEVEL = 5
+ORAM_LEVEL = 2
 
 # The height of the binary tree (as integer)
 LEAF_MIN = int(math.pow(2, ORAM_LEVEL) - 1)
@@ -18,6 +17,10 @@ DUMMY_ID = 999999999999999
 
 # for packing the data id
 FORMAT_CHAR = '>Q'
+
+
+def get_random_leaf_id():
+    return random.randrange(LEAF_MIN, LEAF_MAX + 1)
 
 
 class DataType(Enum):
@@ -31,10 +34,6 @@ class DataType(Enum):
 
     def get_value(self):
         return self.value
-
-
-def get_random_leaf_id():
-    return random.randrange(LEAF_MIN, LEAF_MAX + 1)
 
 
 def get_format(storage):

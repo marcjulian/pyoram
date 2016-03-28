@@ -27,7 +27,6 @@ class ChunkFile:
             logger.info('chunk size is %d after splitting' % len(chunk))
             if len(chunk) != config.BLOCK_SIZE:
                 logger.info('chunk is smaller than the block size, add padding here')
-                # TODO: padding of the last block if it doesn't fit the block size?
                 chunk = chunk.rjust(config.BLOCK_SIZE, PADDING)
                 logger.info('chunk size %d after padding' % len(chunk))
             token = self.aes_crypto.encrypt(chunk, data_id)

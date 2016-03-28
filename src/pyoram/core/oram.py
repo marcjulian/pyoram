@@ -103,7 +103,6 @@ class PathORAM:
                     token = self.aes_crypto.encrypt(plaintext, data_id)
                     Stash().add_file(data_id, token)
                     if data_id_of_interest is not None and data_id_of_interest == data_id:
-                        # TODO: does it get a new leaf id?
                         PositionMap().choose_new_leaf_id(data_id)
                         data_item_of_interest = data_id, plaintext
                     else:

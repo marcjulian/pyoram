@@ -114,17 +114,23 @@ class MainScreen(Screen):
             open_popup_error('Cloud Token', err)
         self.stop.set()
 
-    def upload_file(self, path, filename):
-        with open(os.path.join(path, filename[0]), utils.READ_BINARY_MODE) as file:
+    def upload_file_task(self):
+        with open(os.path.join(self.path, self.filename[0]), utils.READ_BINARY_MODE) as file:
             self.file_input = file.read()
 
         if controller.is_storage_available(len(self.file_input), self.get_free_storage_size()):
-            self.filename = os.path.basename(filename[0])
-            threading.Thread(target=self.split_input_file_task).start()
-            self.dismiss_popup()
+            self.filename = os.path.basename(self.filename[0])
+            self.split_input_file_task()
         else:
-            self.dismiss_popup()
             open_popup('Upload Error', 'Not enough storage available.')
+
+        self.stop.set()
+
+    def upload_file(self, path, filename):
+        self.path = path
+        self.filename = filename
+        threading.Thread(target=self.upload_file_task).start()
+        self.dismiss_popup()
 
     def get_selected_node(self):
         selected_node = self.file_view.selected_node
