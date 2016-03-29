@@ -53,22 +53,28 @@ Crypto tool written in python which stores files on a cloud storage and disguise
 ## Screenshots
 
 Starting PyORAM the first time the sign up page requires the user to enter a password:
+
 <img src="/docs/screenshot/SignUpPageWithPassword.PNG?raw=true" width="500">
 
 After confirmation the key map is generated on the client and switches to the login page.
 The login page verifies the entered password every time the application is started:
+
 <img src="/docs/screenshot/LoginPageWithPassword.PNG?raw=true" width="500">
 
 The main page is shown, if the password which was entered is correct. It enables the user to upload, download and delete files from the cloud storage. Futhermore, the free and used cloud storage is displayed:
+
 <img src="/docs/screenshot/MainPageORAMLevel10.PNG?raw=true" width="500">
 
 The user can select any file from the client to upload to the cloud, it is only limited by the available cloud storage:
+
 <img src="/docs/screenshot/MainPageUploadFile.PNG?raw=true" width="500">
 
 After uploading couple of files, a single file can be selected for downloading or deleting:
+
 <img src="/docs/screenshot/MainPageWithAddedFiles.PNG?raw=true" width="500">
 
 The user can select a file to download to the client:
+
 <img src="/docs/screenshot/MainPageDownloadFile.PNG?raw=true" width="500">
 
 ## Under construction
